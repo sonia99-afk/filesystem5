@@ -99,40 +99,68 @@ function isRedoHotkey(e) {
      return false;
    }
    
-   function normalizeKeyTokenFromEvent(e) {
-     if (!e) return "";
-     const code = String(e.code || "");
+  //  function normalizeKeyTokenFromEvent(e) {
+  //    if (!e) return "";
+  //    const code = String(e.code || "");
    
-     // Letters (layout-independent): KeyA..KeyZ -> A..Z
-     if (code.startsWith("Key") && code.length === 4) {
-       return code.slice(3).toUpperCase();
-     }
-     // Digits: Digit0..Digit9 -> 0..9
-     if (code.startsWith("Digit") && code.length === 6) {
-       return code.slice(5);
-     }
-     // Numpad digits: Numpad0..Numpad9 -> 0..9
-     if (code.startsWith("Numpad") && code.length === 7 && /[0-9]/.test(code.slice(6))) {
-       return code.slice(6);
-     }
+  //    // Letters (layout-independent): KeyA..KeyZ -> A..Z
+  //    if (code.startsWith("Key") && code.length === 4) {
+  //      return code.slice(3).toUpperCase();
+  //    }
+  //    // Digits: Digit0..Digit9 -> 0..9
+  //    if (code.startsWith("Digit") && code.length === 6) {
+  //      return code.slice(5);
+  //    }
+  //    // Numpad digits: Numpad0..Numpad9 -> 0..9
+  //    if (code.startsWith("Numpad") && code.length === 7 && /[0-9]/.test(code.slice(6))) {
+  //      return code.slice(6);
+  //    }
    
-     // Fallback: special keys (including modifiers as normal keys)
-     const key = e.key;
-     if (!key) return "";
+  //    // Fallback: special keys (including modifiers as normal keys)
+  //    const key = e.key;
+  //    if (!key) return "";
    
-     if (key === " " || key === "Spacebar") return "Space";
-     if (key === "Esc") return "Escape";
-     if (key === "+") return "Plus";
+  //    if (key === " " || key === "Spacebar") return "Space";
+  //    if (key === "Esc") return "Escape";
+  //    if (key === "+") return "Plus";
    
-     // Mod keys as normal keys
-     if (key === "Shift") return "Shift";
-     if (key === "Alt") return "Alt";
-     if (key === "Control") return "Control";
-     if (key === "Meta" || key === "OS") return "Command";
+  //    // Mod keys as normal keys
+  //    if (key === "Shift") return "Shift";
+  //    if (key === "Alt") return "Alt";
+  //    if (key === "Control") return "Control";
+  //    if (key === "Meta" || key === "OS") return "Command";
    
-     if (key.length === 1) return key.toUpperCase();
-     return key;
-   }
+  //    if (key.length === 1) return key.toUpperCase();
+  //    return key;
+  //  }
+
+  function tokenFromEvent(e) {
+    const code = String(e.code || "");
+    if (!code) return "";
+  
+    // letters/digits
+    if (code.startsWith("Key") && code.length === 4) return code.slice(3).toUpperCase();
+    if (code.startsWith("Digit") && code.length === 6) return code.slice(5);
+    if (code.startsWith("Numpad") && code.length === 7 && /[0-9]/.test(code.slice(6))) return code.slice(6);
+  
+    // arrows & common controls
+    if (code === "ArrowUp" || code === "ArrowDown" || code === "ArrowLeft" || code === "ArrowRight") return code;
+    if (code === "Enter" || code === "Tab" || code === "Escape" || code === "Backspace" || code === "Delete" || code === "Space") {
+      return code === "Space" ? "Space" : code;
+    }
+  
+    // modifiers by code (важно!)
+    if (code === "ShiftLeft" || code === "ShiftRight") return "Shift";
+    if (code === "AltLeft" || code === "AltRight") return "Alt";
+    if (code === "ControlLeft" || code === "ControlRight") return "Control";
+    if (code === "MetaLeft" || code === "MetaRight") return "Command";
+  
+    // fallback (редко понадобится)
+    const key = String(e.key || "");
+    if (key === "+") return "Plus";
+    if (key.length === 1) return key.toUpperCase();
+    return key;
+  }
    
    function shouldTrackPressed(e) {
      const ae = document.activeElement;
@@ -145,31 +173,48 @@ function isRedoHotkey(e) {
      return true;
    }
    
-   window.addEventListener(
-     "keydown",
-     (e) => {
-       if (!shouldTrackPressed(e)) {
-         pressedKeys.clear();
-         return;
-       }
+  //  window.addEventListener(
+  //    "keydown",
+  //    (e) => {
+  //      if (!shouldTrackPressed(e)) {
+  //        pressedKeys.clear();
+  //        return;
+  //      }
    
-       // не мешаем табу/эскейпу жить своей жизнью (а ещё это снижает конфликты с UI)
-       if (e.key === "Tab" || e.key === "Escape") return;
+  //      // не мешаем табу/эскейпу жить своей жизнью (а ещё это снижает конфликты с UI)
+  //      if (e.key === "Tab" || e.key === "Escape") return;
    
-       const token = normalizeKeyTokenFromEvent(e);
-       if (token) pressedKeys.add(token);
-     },
-     true
-   );
+  //      const token = normalizeKeyTokenFromEvent(e);
+  //      if (token) pressedKeys.add(token);
+  //    },
+  //    true
+  //  );
    
-   window.addEventListener(
-     "keyup",
-     (e) => {
-       const token = normalizeKeyTokenFromEvent(e);
-       if (token) pressedKeys.delete(token);
-     },
-     true
-   );
+  //  window.addEventListener(
+  //    "keyup",
+  //    (e) => {
+  //      const token = normalizeKeyTokenFromEvent(e);
+  //      if (token) pressedKeys.delete(token);
+  //    },
+  //    true
+  //  );
+
+  window.addEventListener("keydown", (e) => {
+    if (!shouldTrackPressed(e)) {
+      pressedKeys.clear();
+      return;
+    }
+  
+    if (e.repeat) return;
+  
+    const t = tokenFromEvent(e);
+    if (t) pressedKeys.add(t);
+  }, true);
+  
+  window.addEventListener("keyup", (e) => {
+    const t = tokenFromEvent(e);
+    if (t) pressedKeys.delete(t);
+  }, true);
    
    window.addEventListener("blur", () => pressedKeys.clear());
    window.addEventListener("focus", () => pressedKeys.clear());
@@ -183,6 +228,12 @@ function isRedoHotkey(e) {
    
      // special-case: Shift + Plus -> "+"
      if (keys.length === 2 && keys.includes("Shift") && keys.includes("Plus")) return "+";
+
+
+
+
+
+     
      console.log("combo:", keys.join("+"));
      return keys.join("+");
    } 
@@ -203,6 +254,10 @@ function isRedoHotkey(e) {
     const have = normalize ? normalize(haveRaw) : haveRaw;
   
     return have === want;
+
+//     const ok = have === want;
+// if (ok) pressedKeys.clear();
+// return ok;
   }
    
    /* ========================= */
