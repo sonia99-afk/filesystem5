@@ -29,6 +29,10 @@
             <button id="modeText" onclick="setTelegramMode(true)">Текст</button>
           </span>
           <button id="tgCopy">Копировать</button>
+          <button id="fmtBold">B</button>
+<button id="fmtItalic">I</button>
+<button id="fmtUnderline">U</button>
+<button id="fmtStrike">S</button>
         </div>
   
         <div id="tree"></div>
@@ -171,12 +175,15 @@
             </tr>
           </tbody>
         </table>
-      
-        <button id="hotkeysResetBtn">Сбросить к стандартным</button>
-        <label style="display:block;margin:10px 0;">
-          <input type="checkbox" id="hkModeToggle">
-          Режим редактирования хоткеев
-        </label>
+
+        <div class="hkbar">
+          <span class="hk-btns">
+            <button id="hkEditBtn" class="hkEditBtn">Редактировать</button>
+            <button id="hkSaveBtn" class="hkSaveBtn">Сохранить</button>
+            <button id="hkDiscardBtn" class="hkDiscardBtn">Не сохранять</button>
+            <button id="hotkeysResetBtn" class="hotkeysResetBtn">Сброс к исходным</button>
+          </span>
+        </div>
       
         <div class="panel-note">
           <b>Подсветка:</b> выбранные элементы отмечаются голубым.
@@ -190,6 +197,8 @@
   <script src="rename.js"></script>
   <script src="app.js"></script>
   <script src="hotkeys_editor.js"></script>
+  
+  <script src="hotkeys_ui.js"></script>
   <script src="arrow_hold_nav.js"></script>
   <script src="multi_select_patch.js"></script>
   <script src="multi_select_deep.js"></script>
@@ -197,5 +206,6 @@
   <!-- <script src="multi_move.js"></script>
   <script src="multi_move_hierarchy.js"></script> -->
   <script src="tg_export_mode.js"></script>
+  <script src="text_formatting.js"></script>
 </body>
 </html>

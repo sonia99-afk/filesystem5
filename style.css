@@ -326,3 +326,60 @@ td.conflict{
 .is-inactive:active{
   background: #e0e0e0;
 }
+
+/* ---- hotkeys edit bar (Редактировать / Сохранить / Не сохранять / Сброс к исходным) ---- */
+/* контейнер с кнопками */
+.hk-btns {
+  display: inline-flex;   /* или flex */
+  gap: 0;                 /* на всякий */
+}
+
+/* убираем любые случайные маржины */
+.hk-btns > button {
+  margin: 0;
+}
+
+.hkSaveBtn {
+  border: 1px solid gray;
+  border-radius: 2px;
+  border-top-right-radius: 0; /* Убрать скругление вверху справа */
+  border-bottom-right-radius: 0; /* Убрать скругление внизу справа */
+}
+
+.hkDiscardBtn {
+  border: 1px solid gray;
+  border-radius: 2px;
+  border-left: none !important;
+  border-top-left-radius: 0; /* Убрать скругление вверху справа */
+  border-bottom-left-radius: 0; /* Убрать скругление внизу справа */
+}
+
+.hkDiscardBtn{
+  height: 21px;
+  background: #f0f0f0;
+  cursor: pointer;
+  border: 1px solid gray;
+}
+
+.hkDiscardBtn:hover { background: #e6e6e6; }
+.hkDiscardBtn:active { background: gray; }
+
+.hkSaveBtn{
+  height: 21px;
+  background: #f0f0f0;
+  cursor: pointer;
+  border: 1px solid gray;
+}
+
+.hkSaveBtn:hover { background: #e6e6e6; }
+.hkSaveBtn:active { background: gray; }
+
+
+/* нужные тебе расстояния */
+#hkSaveBtn {        /* между 1 и 2 = 10px */
+  margin-left: 10px;
+}
+
+#hotkeysResetBtn {  /* между 3 и 4 = 21px */
+  margin-left: 21px;
+}

@@ -34,14 +34,6 @@
       try {
         const text = getCurrentCopyText();
         await navigator.clipboard.writeText(text);
-  
-        copyBtn.textContent = 'Скопировано ✓';
-  
-        if (revertTimer) clearTimeout(revertTimer);
-        revertTimer = setTimeout(() => {
-          copyBtn.textContent = baseText;
-          revertTimer = null;
-        }, 900);
       } catch (e) {
         alert('Не получилось скопировать.');
       }
@@ -219,17 +211,6 @@
     ta.style.width = '35%';
     ta.style.minHeight = '300px';
 
-   
-
-          const SAVE_TEXT = 'Сохранить';
-      const SAVED_TEXT = 'Сохранить ✓';
-
-      let isSaved = false;
-
-      function setSavedState(saved) {
-        isSaved = saved;
-        backBtn.textContent = saved ? SAVED_TEXT : SAVE_TEXT;
-      }
 
         // чтобы события из tg-UI не долетали до обработчика #tree.click в app.js
         const stop = (e) => e.stopPropagation();
@@ -241,13 +222,6 @@
         ta.addEventListener('pointerdown', stop);
         ta.addEventListener('mousedown', stop);
         ta.addEventListener('click', stop);
-    
-
-    
-
-    ta.addEventListener('input', () => {
-      if (isSaved) setSavedState(false);
-    });
 
     backBtn.onclick = () => {
       const newTree = treeFromAscii(ta.value);
@@ -265,9 +239,6 @@
   root.children = newTree.children;
 
   selectedId = root.id;
-
-  // ✅ помечаем как сохранённое (и остаётся так)
-  setSavedState(true);
       
     };
     

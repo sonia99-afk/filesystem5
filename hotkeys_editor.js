@@ -55,9 +55,7 @@
     if (key === "Shift") return "Shift";
     if (key === "Alt") return "Alt";
     if (key === "Control") return "Control";
-    // if (key === "Meta" || key === "OS") return "Control";
-   
-    if (e.metaKey) return "Meta"; 
+    if (key === "Meta" || key === "OS") return "Command";
 
     if (key.length === 1) return key.toUpperCase();
     return key;
@@ -80,7 +78,8 @@
     const keys = [];
     if (e.shiftKey) keys.push("Shift");
     if (e.altKey) keys.push("Alt");
-    if (e.ctrlKey || e.metaKey) keys.push("Control");
+    if (e.ctrlKey) keys.push("Control");
+    if (e.metaKey) keys.push("Command");
     keys.push("Click");
     keys.sort((a, b) => String(a).localeCompare(String(b)));
     return keys.join("+");
@@ -116,6 +115,7 @@ function prettyHotkey(v) {
   // 3) Приоритет для отображения: Ctrl -> Alt -> Shift -> остальное
   const prio = (t) => {
     if (t === "Control") return 1;
+    if (t === "Command") return 1;
     if (t === "Alt") return 2;
     if (t === "Shift") return 3;
     return 4;
@@ -360,15 +360,7 @@ function prettyHotkey(v) {
       });
     }
 
-    // Reset
-    const btn = document.getElementById("hotkeysResetBtn");
-    if (btn) {
-      btn.addEventListener("click", () => {
-        hotkeys.reset();
-        if (editingCell) clearEditing(true);
-        syncTableFromConfig();
-      });
-    }
+    // Reset/Save/Discard UI is handled in hotkeys_ui.js
   }
 
   if (document.readyState === "loading") {
@@ -376,15 +368,4 @@ function prettyHotkey(v) {
   } else {
     init();
   }
-})();
-
-(function () {
-  const el = document.getElementById("hkModeToggle");
-  if (!el) return;
-
-  el.checked = window.hotkeysMode === "custom";
-
-  el.addEventListener("change", () => {
-    window.hotkeysMode = el.checked ? "custom" : "builtin";
-  });
 })();

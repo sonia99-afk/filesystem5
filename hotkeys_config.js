@@ -22,22 +22,22 @@
     outdent: "Shift+ArrowLeft",
 
     // Диапазон (один уровень)
-    rangeUp: "Shift+Alt+Control+ArrowUp",
-    rangeDown: "Shift+Alt+Control+ArrowDown",
-    rangeClick: "Control+Alt+Shift+Click",
+    rangeUp: "Shift+Alt+Command+ArrowUp",
+    rangeDown: "Shift+Alt+Command+ArrowDown",
+    rangeClick: "Command+Alt+Shift+Click",
 
     // Глубокое выделение (ветка)
-    deepUp: "Shift+Control+ArrowUp",
-    deepDown: "Shift+Control+ArrowDown",
-    deepClick: "Control+Shift+Click",
+    deepUp: "Shift+Command+ArrowUp",
+    deepDown: "Shift+Command+ArrowDown",
+    deepClick: "Command+Shift+Click",
 
     // Прочее
     rename: "ё",
     delete: "Backspace",
 
     // Undo/Redo
-    undo: "Control+Z",
-    redo: "Control+Shift+Z",
+    undo: "Command+Z",
+    redo: "Command+Shift+Z",
   };
 
   let current = Object.fromEntries(
@@ -68,11 +68,11 @@
     || "COMMAND".localeCompare(up) === 0
     || "WIN".localeCompare(up) === 0
       || up === "⌘") {
-        return "Meta";
+        return "Command";
     }
 
     if (up === "CTRL") return "Control";
-    if (up === "OPTION") return "OPTION";
+    if (up === "OPTION") return "Alt";
 
     return k.length === 1 ? k.toUpperCase() : k;
   }
