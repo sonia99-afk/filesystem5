@@ -183,7 +183,7 @@ function isRedoHotkey(e) {
    
      // special-case: Shift + Plus -> "+"
      if (keys.length === 2 && keys.includes("Shift") && keys.includes("Plus")) return "+";
-   
+     console.log("combo:", keys.join("+"));
      return keys.join("+");
    } 
 
