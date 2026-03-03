@@ -11,11 +11,7 @@ const root = makeNode(LEVEL.COMPANY, 'Компания');
 let selectedId = root.id;
 let treeHasFocus = true;
 
-//чтука для соло работы шифт, альт и тд. тоже сомнительная и не првереная
-const MODIFIER_KEYS = new Set(["Shift", "Control", "Alt", "Meta", "OS"]);
-function isModifierKey(key) {
-    return MODIFIER_KEYS.has(key);
-}
+
 
 
 /* =========================
@@ -31,6 +27,8 @@ function snapshot() {
     treeHasFocus
   });
 }
+
+
 
 function restore(state) {
   const data = JSON.parse(state);
@@ -48,6 +46,7 @@ function restore(state) {
   if (!findWithParent(root, selectedId)) selectedId = root.id;
 
   renamingId = null;
+
   render();
 }
 
@@ -83,52 +82,81 @@ function isRedoHotkey(e) {
   return isHotkey(e, "redo");
 }
 
+/* =========================
+   Hotkeys: modifiers + ONE key
+   - No chords, no keyup tracking
+   - Primary = Ctrl (Win/Linux) or Cmd (macOS)
+   ========================= */
 
- 
-//функция для добавления соло шифт, альт и тд. не провереная, выше рабочая старая
-function comboFromEvent(e) {
-  // обработка пробела
-if (e.key === " ") {
-  const parts = [];
-  if (e.ctrlKey || e.metaKey) parts.push("Ctrl/Cmd");
-  if (e.altKey) parts.push("Alt");
-  if (e.shiftKey) parts.push("Shift");
-  parts.push("Space");
-  return parts.join("+");
+function isTextEditingElement(el) {
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  const tag = String(el.tagName || "").toUpperCase();
+  if (tag === "INPUT" || tag === "TEXTAREA") return true;
+  return false;
 }
 
-  // обработка "+"
-  if (e.key === "+") {
-      const parts = [];
-      if (e.ctrlKey || e.metaKey) parts.push("Ctrl/Cmd");
-      if (e.altKey) parts.push("Alt");
-      if (e.shiftKey) parts.push("Shift");
-      parts.push("+");
-      return parts.join("+");
-  }
+function getPlatformInfo() {
+  return window.hotkeys?.getPlatformInfo?.() || { isMac: false, primaryToken: "Primary" };
+}
 
-  const parts = [];
-  if (e.ctrlKey || e.metaKey) parts.push("Ctrl/Cmd");
-  if (e.altKey) parts.push("Alt");
-  if (e.shiftKey) parts.push("Shift");
+function normalizeBaseKeyFromEvent(e) {
+  if (!e) return "";
 
-  let key = e.key === "Esc" ? "Escape" : e.key;
-  // добавляем только если это не клавиша-модификатор
-  if (!isModifierKey(key)) {
-      if (key.length === 1) key = key.toUpperCase();
-      parts.push(key);
-  }
+  const k = String(e.key || "");
+  if (k === "Shift" || k === "Alt" || k === "Control" || k === "Meta" || k === "OS") return "";
 
-  return parts.join("+");
+  const code = String(e.code || "");
+  if (code.startsWith("Key") && code.length === 4) return code.slice(3).toUpperCase();
+  if (code.startsWith("Digit") && code.length === 6) return code.slice(5);
+  if (code.startsWith("Numpad") && code.length === 7 && /[0-9]/.test(code.slice(6))) return code.slice(6);
+
+  if (k === " " || k === "Spacebar") return "Space";
+  if (k === "Esc") return "Escape";
+  if (k === "+") return "Plus";
+
+  if (k.length === 1) return k.toUpperCase();
+  return k;
+}
+
+function comboFromKeyEvent(e) {
+  const { isMac, primaryToken } = getPlatformInfo();
+
+  const base = normalizeBaseKeyFromEvent(e);
+  if (!base) return "";
+
+  const tokens = [];
+  const primaryDown = isMac ? !!e.metaKey : !!e.ctrlKey;
+  if (primaryDown) tokens.push(primaryToken);
+  if (e.altKey) tokens.push("Alt");
+  if (e.shiftKey) tokens.push("Shift");
+  tokens.push(base);
+
+  if (tokens.length === 2 && tokens.includes("Shift") && tokens.includes("Plus")) return "+";
+
+  return window.hotkeys?.normalizeCombo?.(tokens.join("+")) || tokens.join("+");
 }
 
 function isHotkey(e, action) {
-  // hotkeys — это твой конфиг из hotkeys_config.js
-  const want = window.hotkeys?.get?.(action);
-  if (!want) return false;
-  return comboFromEvent(e) === want;
-}
+  const wantRaw = window.hotkeys?.get?.(action);
+  if (!wantRaw) return false;
 
+  if (e.repeat) return false;
+
+  const ae = document.activeElement;
+  if (isTextEditingElement(ae)) return false;
+  if (ae?.classList?.contains?.("edit")) return false;
+  if (ae?.classList?.contains?.("tg-export")) return false;
+
+  const haveRaw = comboFromKeyEvent(e);
+  if (!haveRaw) return false;
+
+  const normalize = window.hotkeys?.normalizeCombo;
+  const want = normalize ? normalize(wantRaw) : wantRaw;
+  const have = normalize ? normalize(haveRaw) : haveRaw;
+
+  return have === want;
+}
 
 /* ========================= */
 
@@ -845,8 +873,15 @@ function runTests() {
   console.log('All tests passed');
 }
 
+
+
 render();
 
 if (new URLSearchParams(location.search).get('test') === '1') {
   runTests();
 }
+
+
+
+
+
