@@ -1,25 +1,22 @@
-// multi_select_level.js
+// multi_select_patch.js
 // Массовое выделение подряд ТОЛЬКО на одном уровне (внутри одного UL):
-// - Shift+Cmd+ArrowUp / Shift+Cmd+ArrowDown
-// - Shift+Cmd+Click
+// - rangeUp / rangeDown
+// - rangeClick мышью: может быть и Click, и DblClick
 //
-// Подсветка: голубым (инжектим CSS сами, чтобы не трогать style.css)
+// Подсветка: голубым
 //
-// Экспорт API для дальнейших операций (удалить/переместить):
+// API:
 // window.multiSelect = { getIds, clear, has, size, debug }
-//
-// ВАЖНО: app.js хранит selectedId внутри своего scope (не в window),
-// поэтому "главное" выделение обновляем через синтетический click по .row.
-// Диапазон строим по DOM-структуре: UL[data-level] > LI > .row
+
 (function () {
   if (typeof window === "undefined") return;
 
   const HOST_ID = "tree";
 
-  // ---- style injection (голубая подсветка) ----
   (function injectStyle() {
     const id = "multi-select-style";
     if (document.getElementById(id)) return;
+
     const st = document.createElement("style");
     st.id = id;
     st.textContent = `
@@ -31,16 +28,15 @@
     document.head.appendChild(st);
   })();
 
-  // ---- internal state ----
   const state = {
-    anchorId: null,     // откуда тянем диапазон
-    contextKey: null,   // "тот же список соседей" (родитель + уровень)
-    ids: new Set(),     // выделенные id
+    anchorId: null,
+    contextKey: null,
+    ids: new Set(),
   };
 
-  let synth = 0; // чтобы наши синтетические клики не сбрасывали состояние
+  let synth = 0;
+  let pendingSingleTimer = null;
 
-  // ---- helpers ----
   function host() {
     return document.getElementById(HOST_ID);
   }
@@ -60,26 +56,20 @@
   function selectedRow() {
     const h = host();
     if (!h) return null;
-    // app.js отмечает текущий выбор классом .sel :contentReference[oaicite:2]{index=2}
     return h.querySelector(".row.sel");
   }
 
-  function isCmdLike(e) {
-    // macOS: Cmd, Windows/Linux: Ctrl
-    return e.metaKey || e.ctrlKey;
-  }
-
-  // Контекст = (родительский узел, под которым этот UL) + (data-level у UL)
   function contextKeyForRow(row) {
     if (!row) return null;
+
     const li = row.closest("li");
     if (!li) return null;
+
     const ul = li.parentElement;
     if (!ul || ul.tagName !== "UL") return null;
 
-    const level = (ul.dataset && ul.dataset.level) ? String(ul.dataset.level) : "";
+    const level = ul.dataset?.level ? String(ul.dataset.level) : "";
 
-    // UL принадлежит либо корню (#tree > ul), либо какому-то LI (родителю)
     const parentLi = ul.closest("li");
     const parentRow = parentLi ? parentLi.querySelector(":scope > .row") : null;
     const parentId = parentRow ? parentRow.dataset.id : "ROOT";
@@ -87,20 +77,23 @@
     return `${parentId}::${level}`;
   }
 
-  // Соседи = прямые дети UL: LI -> :scope > .row
   function siblingRows(row) {
     if (!row) return [];
+
     const li = row.closest("li");
     if (!li) return [];
+
     const ul = li.parentElement;
     if (!ul || ul.tagName !== "UL") return [];
 
     const lis = Array.from(ul.children).filter((x) => x.tagName === "LI");
     const out = [];
+
     for (const li2 of lis) {
       const r = li2.querySelector(":scope > .row");
       if (r) out.push(r);
     }
+
     return out;
   }
 
@@ -113,11 +106,18 @@
   function applyClasses() {
     const h = host();
     if (!h) return;
-    h.querySelectorAll(".row.multi").forEach((el) => el.classList.remove("multi"));
-    if (!state.ids.size) return;
+
+    h.querySelectorAll('.row[data-multi-owner="level"]').forEach((el) => {
+      el.classList.remove("multi");
+      el.removeAttribute("data-multi-owner");
+    });
+
     for (const id of state.ids) {
       const r = rowById(id);
-      if (r) r.classList.add("multi");
+      if (r) {
+        r.classList.add("multi");
+        r.setAttribute("data-multi-owner", "level");
+      }
     }
   }
 
@@ -127,7 +127,6 @@
     const aCtx = contextKeyForRow(anchorRow);
     const bCtx = contextKeyForRow(activeRow);
 
-    // только один уровень/родитель
     if (!aCtx || !bCtx || aCtx !== bCtx) return false;
 
     const sibs = siblingRows(anchorRow);
@@ -144,12 +143,17 @@
     return true;
   }
 
-  // обновляем "основное" выделение app.js через клик
   function clickRow(row) {
     if (!row) return;
     synth++;
     try {
-      row.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+      row.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        })
+      );
     } finally {
       synth--;
     }
@@ -157,64 +161,68 @@
 
   function isEditingNow() {
     const ae = document.activeElement;
-    return !!(ae && ae.tagName === "INPUT" && ae.classList && ae.classList.contains("edit"));
+    if (!ae) return false;
+    if (ae.tagName === "INPUT" && ae.classList?.contains("edit")) return true;
+    if (ae.tagName === "TEXTAREA" && ae.classList?.contains("tg-export")) return true;
+    if (ae.isContentEditable) return true;
+    return false;
   }
 
-  // ---- persist multi highlight across re-render ----
-  // app.js вызывает render() после кликов/клавиш :contentReference[oaicite:3]{index=3}
-  if (typeof window.render === "function" && !window.render.__multiLevelPatched) {
+  function clearPendingSingle() {
+    if (pendingSingleTimer) {
+      clearTimeout(pendingSingleTimer);
+      pendingSingleTimer = null;
+    }
+  }
+
+  if (typeof window.render === "function" && !window.render.__multiLevelPatchedV2) {
     const _render = window.render;
     window.render = function patchedRender() {
       _render();
       applyClasses();
     };
-    window.render.__multiLevelPatched = true;
+    window.render.__multiLevelPatchedV2 = true;
   }
 
-  // ---- hotkeys: Shift+Cmd+Up/Down ----
-  function handleRangeKey(dir /* -1 | +1 */) {
+  function handleRangeKey(dir) {
     const cur = selectedRow();
     if (!cur) return;
-  
+
     const ctx = contextKeyForRow(cur);
-  
-    // ✅ ПЕРВОЕ нажатие: только текущий элемент, без перехода на next
+
     if (!state.anchorId || state.contextKey !== ctx) {
       state.anchorId = cur.dataset.id;
       state.contextKey = ctx;
       state.ids = new Set([cur.dataset.id]);
       applyClasses();
-      return; // <-- ключевое
+      return;
     }
-  
-    // дальше — расширяем диапазон как раньше
+
     const sibs = siblingRows(cur);
     const idx = sibs.indexOf(cur);
     const next = sibs[idx + dir];
     if (!next) return;
-  
+
     const anchor = rowById(state.anchorId) || cur;
-  
+
     const ok = setRange(anchor, next);
     if (!ok) {
       state.anchorId = next.dataset.id;
       state.contextKey = contextKeyForRow(next);
       state.ids = new Set([next.dataset.id]);
     }
-  
+
     clickRow(next);
     applyClasses();
   }
-  
 
   window.addEventListener(
     "keydown",
     (e) => {
       if (window.hotkeysMode === "custom") return;
       if (isEditingNow()) return;
-  
       if (typeof isHotkey !== "function") return;
-  
+
       if (isHotkey(e, "rangeUp")) {
         e.preventDefault();
         e.stopPropagation();
@@ -222,7 +230,7 @@
         handleRangeKey(-1);
         return;
       }
-  
+
       if (isHotkey(e, "rangeDown")) {
         e.preventDefault();
         e.stopPropagation();
@@ -230,88 +238,115 @@
         handleRangeKey(+1);
         return;
       }
-  
-      // иначе — не трогаем событие
     },
     true
   );
-  
 
-  // ---- mouse: Shift+Cmd+Click ----
-  function installClickHandler() {
+  function processRangeRow(row) {
+    const clicked = row;
+    const ctxClicked = contextKeyForRow(clicked);
+
+    if (!state.contextKey || state.contextKey !== ctxClicked) {
+      state.contextKey = ctxClicked;
+      state.anchorId = clicked.dataset.id;
+      state.ids = new Set([clicked.dataset.id]);
+      clickRow(clicked);
+      applyClasses();
+      return;
+    }
+
+    const id = clicked.dataset.id;
+
+    if (state.ids.has(id)) {
+      state.ids.delete(id);
+
+      if (state.anchorId === id) {
+        const next = state.ids.values().next().value || null;
+        state.anchorId = next;
+      }
+    } else {
+      state.ids.add(id);
+      if (!state.anchorId) state.anchorId = id;
+    }
+
+    clickRow(clicked);
+    applyClasses();
+  }
+
+  function handleRangePointer(e, baseToken) {
+    if (synth) return;
+
+    const row = e.target?.closest?.(".row") || null;
+
+    if (e.target?.closest?.(".act")) return;
+
+    if (!row) {
+      if (baseToken === "Click") {
+        reset();
+        applyClasses();
+      }
+      return;
+    }
+
+    if (typeof isMouseHotkey !== "function") {
+      if (baseToken === "Click") {
+        reset();
+        applyClasses();
+      }
+      return;
+    }
+
+    if (!isMouseHotkey(e, "rangeClick", baseToken)) {
+      if (baseToken === "Click") {
+        reset();
+        applyClasses();
+      }
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+
+    processRangeRow(row);
+  }
+
+  function installPointerHandlers() {
     const h = host();
-    if (!h || h.__multiLevelClickInstalled) return;
-    h.__multiLevelClickInstalled = true;
+    if (!h) return;
+    if (h.__multiLevelClickInstalledV2) return;
+    h.__multiLevelClickInstalledV2 = true;
 
     h.addEventListener(
       "click",
       (e) => {
         if (synth) return;
-        const row = e.target && e.target.closest ? e.target.closest(".row") : null;
 
-        // клики по кнопкам действий не трогаем (.act) :contentReference[oaicite:4]{index=4}
-        if (e.target && e.target.closest && e.target.closest(".act")) return;
+        clearPendingSingle();
 
-        // клик мимо строк — сброс
-        if (!row) {
-          if (!synth) reset();
-          return;
-        }
+        // ждём немного: вдруг это начало dblclick
+        pendingSingleTimer = setTimeout(() => {
+          pendingSingleTimer = null;
+          handleRangePointer(e, "Click");
+        }, 230);
+      },
+      true
+    );
 
-        // обычный клик (без Shift+Cmd) — сбрасывает мультивыделение
-        if (!(e.shiftKey && isCmdLike(e) && e.altKey)) {
-          if (!synth) reset();
-          return;
-        }
+    h.addEventListener(
+      "dblclick",
+      (e) => {
+        if (synth) return;
 
-        // наш range click
-        e.preventDefault();
-e.stopPropagation();
-
-const clicked = row;
-const ctxClicked = contextKeyForRow(clicked);
-
-// если контекст другой (другой уровень/родитель) — начать заново
-if (!state.contextKey || state.contextKey !== ctxClicked) {
-  state.contextKey = ctxClicked;
-  state.anchorId = clicked.dataset.id;     // якорь пригодится для shift+стрелок
-  state.ids = new Set([clicked.dataset.id]);
-  clickRow(clicked);                       // обновить основной курсор (.sel)
-  applyClasses();
-  return;
-}
-
-// тот же блок: toggle
-const id = clicked.dataset.id;
-
-if (state.ids.has(id)) {
-  // убрать из выделения
-  state.ids.delete(id);
-
-  // если убрали якорь — перекинуть якорь на любой оставшийся (или null)
-  if (state.anchorId === id) {
-    const next = state.ids.values().next().value || null;
-    state.anchorId = next;
-  }
-} else {
-  // добавить
-  state.ids.add(id);
-
-  // если якоря не было — поставить
-  if (!state.anchorId) state.anchorId = id;
-}
-
-// клик по строке — чтобы .sel перешёл туда (не сбрасывает multi, т.к. мы stopPropagation тут)
-clickRow(clicked);
-applyClasses();
+        clearPendingSingle();
+        handleRangePointer(e, "DblClick");
       },
       true
     );
   }
 
-  installClickHandler();
+  installPointerHandlers();
 
-  // ---- API для следующих шагов (удалить/переместить пачкой) ----
   window.multiSelect = {
     getIds() {
       return Array.from(state.ids);
@@ -335,26 +370,25 @@ applyClasses();
     },
   };
 
-  // Сброс мультивыделения при обычном перемещении курсора стрелками
-window.addEventListener(
-  "keydown",
-  (e) => {
-    if (isEditingNow && isEditingNow()) return;
+  window.addEventListener(
+    "keydown",
+    (e) => {
+      if (isEditingNow()) return;
 
-    // обычные стрелки без модификаторов (и на mac, и на win)
-    const noMods = !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey;
-    if (noMods && (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
-      if (window.multiSelect && typeof window.multiSelect.clear === "function") {
-        window.multiSelect.clear(); // снимет голубое выделение
+      const noMods = !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey;
+      if (
+        noMods &&
+        (e.key === "ArrowUp" ||
+          e.key === "ArrowDown" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight")
+      ) {
+        window.multiSelect?.clear?.();
       }
-      // важно: НЕ preventDefault, чтобы app.js продолжил двигать курсор
-    }
-  },
-  true
-);
+    },
+    true
+  );
 
-
-  // первый прогон (если скрипт подцепился после render)
   try {
     applyClasses();
   } catch (_) {}

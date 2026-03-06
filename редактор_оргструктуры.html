@@ -28,11 +28,13 @@
             <button id="modeStd" onclick="setTelegramMode(false)">Схема</button>
             <button id="modeText" onclick="setTelegramMode(true)">Текст</button>
           </span>
-          <button id="tgCopy">Копировать 100</button>
-          <button id="fmtBold">B</button>
-<button id="fmtItalic">I</button>
-<button id="fmtUnderline">U</button>
-<button id="fmtStrike">S</button>
+          <button id="tgCopy">Копировать</button>
+          <div class="ftmblock">
+            <button id="fmtBold">B</button>
+            <button id="fmtItalic" class="fmtItalic">I</button>
+            <button id="fmtUnderline">U</button>
+            <button id="fmtStrike">S</button>
+          </div>
         </div>
   
         <div id="tree"></div>
@@ -56,14 +58,14 @@
             <tr>
               <td>Добавить рядом</td>
               <td data-action="addSibling">Enter</td>
-              <td>-</td>
+              <td data-action="addSiblingClick">Alt+Click</td>
               <td>[+]</td>
             </tr>
         
             <tr>
               <td>Добавить вложение</td>
               <td data-action="addChild">Shift+Enter</td>
-              <td>-</td>
+              <td data-action="addChildClick">Alt+Shift+Click</td>
               <td>[>]</td>
             </tr>
         
@@ -71,7 +73,7 @@
             <tr>
               <td rowspan="4">Навигация по дереву</td>
               <td data-action="navUp">ArrowUp</td>
-              <td rowspan="4">Клик</td>
+              <td rowspan="4" data-action="navClick">Click</td>
               <td rowspan="4">-</td>
             </tr>
             <tr>
@@ -88,7 +90,7 @@
             <tr>
               <td rowspan="2">Перемещение (внутри уровня)</td>
               <td data-action="moveUp">Shift+ArrowUp</td>
-              <td rowspan="2">-</td>
+              <td rowspan="4" style="background-color: #f3f3f3;">Перетаскивание мышкой</td>
               <td rowspan="2">-</td>
             </tr>
             <tr>
@@ -100,7 +102,6 @@
               <td rowspan="2">Перемещение (между уровнями)</td>
               <td data-action="indent">Shift+ArrowRight</td>
               <td rowspan="2">-</td>
-              <td rowspan="2">-</td>
             </tr>
             <tr>
               <td data-action="outdent">Shift+ArrowLeft</td>
@@ -110,7 +111,7 @@
             <tr>
               <td rowspan="2">Диапазон (только один уровень)</td>
               <td data-action="rangeUp">Shift+Alt+Ctrl/Cmd+ArrowUp</td>
-              <td rowspan="2">Ctrl/Cmd+Alt+Shift+Клик</td>
+              <td rowspan="2" data-action="rangeClick">Primary+Alt+Shift+Click</td>
               <td rowspan="2">-</td>
             </tr>
             <tr>
@@ -121,7 +122,7 @@
             <tr>
               <td rowspan="2">Глубокое выделение (в ветке)</td>
               <td data-action="deepUp">Shift+Ctrl/Cmd+ArrowUp</td>
-              <td rowspan="2">Ctrl/Cmd+Shift+Click</td>
+              <td rowspan="2" data-action="deepClick">Primary+Shift+Click</td>
               <td rowspan="2">-</td>
             </tr>
             <tr>
@@ -132,21 +133,21 @@
             <tr>
               <td>Переименовать</td>
               <td data-action="rename">ё</td>
-              <td>Двойной клик</td>
+              <td data-action="renameClick">DblClick</td>
               <td>[..]</td>
             </tr>
         
             <tr>
               <td>Удалить</td>
               <td data-action="delete">Backspace</td>
-              <td>-</td>
+              <td data-action="deleteClick">Shift+Click</td>
               <td>[х]</td>
             </tr>
 
             <tr>
               <td>Отменить действие</td>
               <td data-action="undo">Ctrl/Cmd+Z</td>
-              <td>-</td>
+              <td data-action="undoClick">Ctrl/Cmd+Click</td>
               <td class="ui-icon" title="Undo">
                 <svg class="ui-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M9 14L4 9l5-5"/>
@@ -158,7 +159,7 @@
             <tr>
               <td>Вернуть действие</td>
               <td data-action="redo">Ctrl/Cmd+Shift+Z</td>
-              <td>-</td>
+              <td data-action="redoClick">Ctrl+Alt+Click</td>
               <td class="ui-icon" title="Redo">
                 <svg class="ui-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M15 14l5-5-5-5"/>
@@ -207,5 +208,7 @@
   <script src="multi_move_hierarchy.js"></script>
   <script src="tg_export_mode.js"></script>
   <script src="text_formatting.js"></script>
+
+  <script src="drag_move.js"></script>
 </body>
 </html>

@@ -27,6 +27,7 @@ body{ margin:0; font-family:Consolas,"Courier New",monospace; background:#fff; c
       --trunk-project:10px;
       --trunk-dept:12px;
       --trunk-role:14px;
+      --trunk-step:18px;
     }
 
     ul{
@@ -40,6 +41,7 @@ body{ margin:0; font-family:Consolas,"Courier New",monospace; background:#fff; c
     ul[data-level="1"]{ --trunk-x: var(--trunk-project); }
     ul[data-level="2"]{ --trunk-x: var(--trunk-dept); }
     ul[data-level="3"]{ --trunk-x: var(--trunk-role); }
+    ul[data-level="4"]{ --trunk-x: var(--trunk-step); }
 
     .trunk{
       position:absolute;
@@ -265,6 +267,7 @@ td.conflict{
 
 #tgCopy {
   display:inline-block;
+  margin-right: 21px
 }
 /* контейнер тумблера */
 .mode-toggle{
@@ -298,7 +301,7 @@ td.conflict{
 
 /* hover/active — такие же */
 .mode-toggle button:hover { background: #e6e6e6; }
-.mode-toggle button:active { background: gray; }
+/* .mode-toggle button:active { background: rgb(160, 90, 90); } */
 
 .mode-toggle button.active{
   background: #dcdcdc;   /* чуть темнее */
@@ -362,7 +365,7 @@ td.conflict{
 }
 
 .hkDiscardBtn:hover { background: #e6e6e6; }
-.hkDiscardBtn:active { background: gray; }
+/* .hkDiscardBtn:active { background: gray; } */
 
 .hkSaveBtn{
   height: 21px;
@@ -372,7 +375,7 @@ td.conflict{
 }
 
 .hkSaveBtn:hover { background: #e6e6e6; }
-.hkSaveBtn:active { background: gray; }
+/* .hkSaveBtn:active { background: gray; } */
 
 
 /* нужные тебе расстояния */
@@ -383,3 +386,47 @@ td.conflict{
 #hotkeysResetBtn {  /* между 3 и 4 = 21px */
   margin-left: 21px;
 }
+
+.ftmblock {
+  display: inline-flex;
+  gap: 0;
+  height: 21px;
+}
+
+.ftmblock button:active { background:inherit; }
+.ftmblock button:hover { background: #e6e6e6; }
+
+.ftmblock button{
+  border:1px solid gray;
+  margin:0;
+  border-radius:0;
+  min-width: 22px;
+}
+
+.ftmblock button + button{
+  border-left:none;
+}
+.ftmblock button:first-child{
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+}
+.ftmblock button:last-child{
+  border-top-right-radius: 2px;
+  border-bottom-right-radius: 2px;
+}
+
+
+.edit.edit-rich{
+  display:inline-block;
+  padding:0 2px;
+  min-height:1.2em;
+  line-height:1.2em;
+  white-space:nowrap;
+  outline:none;
+}
+
+.rt-b{ font-weight:700; }
+.rt-i{ font-style:italic; }
+.rt-u{ text-decoration:underline; }
+.rt-s{ text-decoration:line-through; }
+.rt-u.rt-s{ text-decoration: underline line-through; }

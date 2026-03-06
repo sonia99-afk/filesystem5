@@ -1,5 +1,5 @@
-const LEVEL = { COMPANY: 0, PROJECT: 1, DEPT: 2, ROLE: 3 };
-const DEFAULT_NAME = { 0: 'Компания', 1: 'Проект', 2: 'Отдел', 3: 'Должность' };
+const LEVEL = { COMPANY: 0, PROJECT: 1, DEPT: 2, ROLE: 3, STEP: 4 };
+const DEFAULT_NAME = { 0: 'Проект', 1: 'Процесс', 2: 'Блок задач', 3: 'Задача', 4: 'Шаг' };
 
 const uid = () => Math.random().toString(36).slice(2, 9) + '_' + Date.now().toString(36);
 
@@ -7,15 +7,12 @@ function makeNode(level, name) {
   return { id: uid(), level, name: (name || DEFAULT_NAME[level]), children: [] };
 }
 
-const root = makeNode(LEVEL.COMPANY, 'Компания');
+const root = makeNode(LEVEL.COMPANY, 'Проект');
 let selectedId = root.id;
 let treeHasFocus = true;
 
-
-
-
 /* =========================
-   Undo / Redo (Cmd+X = undo, Cmd+Z = redo)
+   Undo / Redo
    ========================= */
 let undoStack = [];
 let redoStack = [];
@@ -27,8 +24,6 @@ function snapshot() {
     treeHasFocus
   });
 }
-
-
 
 function restore(state) {
   const data = JSON.parse(state);
@@ -69,8 +64,10 @@ function redo() {
   restore(next);
 }
 
-// layout-independent hotkeys (works on RU layout too)
-function isMod(e) { return (e.metaKey || e.ctrlKey) && !e.altKey; }
+// layout-independent hotkeys
+function isMod(e) {
+  return (e.metaKey || e.ctrlKey) && !e.altKey;
+}
 
 function isUndoHotkey(e) {
   if (!window.hotkeys?.get) return false;
@@ -84,8 +81,6 @@ function isRedoHotkey(e) {
 
 /* =========================
    Hotkeys: modifiers + ONE key
-   - No chords, no keyup tracking
-   - Primary = Ctrl (Win/Linux) or Cmd (macOS)
    ========================= */
 
 function isTextEditingElement(el) {
@@ -158,6 +153,36 @@ function isHotkey(e, action) {
   return have === want;
 }
 
+function comboFromMouseEvent(e, baseToken) {
+  const { isMac, primaryToken } = getPlatformInfo();
+
+  const tokens = [];
+  const primaryDown = isMac ? !!e.metaKey : !!e.ctrlKey;
+  if (primaryDown) tokens.push(primaryToken);
+  if (e.altKey) tokens.push("Alt");
+  if (e.shiftKey) tokens.push("Shift");
+  tokens.push(baseToken);
+
+  return window.hotkeys?.normalizeCombo?.(tokens.join("+")) || tokens.join("+");
+}
+
+function isMouseHotkey(e, action, baseToken) {
+  const wantRaw = window.hotkeys?.get?.(action);
+  if (!wantRaw) return false;
+
+  const ae = document.activeElement;
+  if (isTextEditingElement(ae)) return false;
+  if (ae?.classList?.contains?.("edit")) return false;
+  if (ae?.classList?.contains?.("tg-export")) return false;
+
+  const haveRaw = comboFromMouseEvent(e, baseToken);
+  const normalize = window.hotkeys?.normalizeCombo;
+  const want = normalize ? normalize(wantRaw) : wantRaw;
+  const have = normalize ? normalize(haveRaw) : haveRaw;
+
+  return have === want;
+}
+
 /* ========================= */
 
 function esc(s) {
@@ -185,7 +210,7 @@ function findWithParent(node, id, parent = null) {
 }
 
 function canHaveChild(node) {
-  return node.level < LEVEL.ROLE;
+  return node.level < LEVEL.STEP;
 }
 
 function flatten() {
@@ -242,6 +267,7 @@ function addChild(parentId) {
   selectedId = child.id;
   treeHasFocus = true;
   render();
+  setTimeout(() => startRename(child.id), 0);
 }
 
 function addSibling(targetId) {
@@ -264,6 +290,7 @@ function addSibling(targetId) {
   selectedId = sib.id;
   treeHasFocus = true;
   render();
+  setTimeout(() => startRename(sib.id), 0);
 }
 
 function removeSelected() {
@@ -280,23 +307,16 @@ function removeSelected() {
 
   pushHistory();
 
-  // запоминаем соседа ДО удаления
   let nextSelected = null;
 
-  // сначала пробуем выбрать следующего
   if (idx + 1 < arr.length) {
     nextSelected = arr[idx + 1].id;
-  }
-  // если следующего нет — предыдущего
-  else if (idx - 1 >= 0) {
+  } else if (idx - 1 >= 0) {
     nextSelected = arr[idx - 1].id;
-  }
-  // если вообще нет соседей — родителя
-  else {
+  } else {
     nextSelected = parent.id;
   }
 
-  // удаляем
   parent.children.splice(idx, 1);
 
   selectedId = nextSelected;
@@ -327,8 +347,6 @@ function moveWithinParent(dir) {
   render();
 }
 
-// Shift+Right: indent (make child of previous sibling)
-// Shift+Left: outdent (move after parent)
 function indentNode(id) {
   if (!id || id === root.id) return;
 
@@ -342,12 +360,11 @@ function indentNode(id) {
   const newParent = siblings[idx - 1];
   if (!canHaveChild(newParent)) return;
 
+  const maxL = getMaxLevelInSubtree(r.node);
+  if (maxL + 1 > LEVEL.STEP) return;
+
   pushHistory();
 
-  const maxL = getMaxLevelInSubtree(r.node);
-if (maxL + 1 > LEVEL.ROLE) return; // запретить indent
-
-  // при indent узел становится на уровень глубже
   if (!shiftSubtreeLevel(r.node, +1)) return;
 
   siblings.splice(idx, 1);
@@ -370,7 +387,6 @@ function outdentNode(id) {
 
   pushHistory();
 
-  // при outdent узел поднимается на уровень выше
   if (!shiftSubtreeLevel(r.node, -1)) return;
 
   parent.children = parent.children.filter(x => x.id !== id);
@@ -383,15 +399,12 @@ function outdentNode(id) {
   render();
 }
 
-
 function shiftSubtreeLevel(node, delta) {
   const oldLevel = node.level;
   const newLevel = oldLevel + delta;
 
-  // защита: уровни не должны выходить за пределы
-  if (newLevel < LEVEL.COMPANY || newLevel > LEVEL.ROLE) return false;
+  if (newLevel < LEVEL.COMPANY || newLevel > LEVEL.STEP) return false;
 
-  // если имя было дефолтным для старого уровня — заменяем на дефолт нового
   if ((node.name || '').trim() === DEFAULT_NAME[oldLevel]) {
     node.name = DEFAULT_NAME[newLevel];
   }
@@ -412,7 +425,6 @@ function getMaxLevelInSubtree(node) {
   }
   return max;
 }
-
 
 /* ======== Navigation ======== */
 
@@ -474,7 +486,7 @@ function render() {
   if (treeHasFocus) focusSelectedRow();
 
   const rid = consumeRenameRequest?.();
-if (rid) startRename(rid);
+  if (rid) startRename(rid);
 }
 
 function isTreeLocked() {
@@ -497,10 +509,8 @@ function makeBtn(midText, onClick) {
   r.className = 'br';
   r.textContent = ']';
 
-  // ✅ ВАЖНО: собрать содержимое кнопки
   b.append(l, m, r);
 
-  // ✅ перехват клика с учётом lock
   b.addEventListener('click', (e) => {
     if (isTreeLocked()) {
       e.preventDefault();
@@ -510,10 +520,76 @@ function makeBtn(midText, onClick) {
     onClick(e);
   });
 
-  // ✅ ВАЖНО: вернуть DOM-элемент
   return b;
 }
 
+function handleRowMouseHotkeys(e, n, baseToken) {
+  if (isTreeLocked()) return false;
+
+  if (isMouseHotkey(e, "redoClick", baseToken)) {
+    e.preventDefault();
+    e.stopPropagation();
+    treeHasFocus = true;
+    redo();
+    return true;
+  }
+
+  if (isMouseHotkey(e, "undoClick", baseToken)) {
+    e.preventDefault();
+    e.stopPropagation();
+    treeHasFocus = true;
+    undo();
+    return true;
+  }
+
+  if (isMouseHotkey(e, "deleteClick", baseToken)) {
+    e.preventDefault();
+    e.stopPropagation();
+    selectedId = n.id;
+    treeHasFocus = true;
+    removeSelected();
+    return true;
+  }
+
+  if (isMouseHotkey(e, "addSiblingClick", baseToken)) {
+    e.preventDefault();
+    e.stopPropagation();
+    selectedId = n.id;
+    treeHasFocus = true;
+    addSibling(n.id);
+    return true;
+  }
+
+  if (isMouseHotkey(e, "addChildClick", baseToken)) {
+    e.preventDefault();
+    e.stopPropagation();
+    selectedId = n.id;
+    treeHasFocus = true;
+    addChild(n.id);
+    return true;
+  }
+
+  if (isMouseHotkey(e, "renameClick", baseToken)) {
+    e.preventDefault();
+    e.stopPropagation();
+    selectedId = n.id;
+    treeHasFocus = true;
+    render();
+    startRename(n.id);
+    return true;
+  }
+
+  if (isMouseHotkey(e, "navClick", baseToken)) {
+    e.preventDefault();
+    e.stopPropagation();
+    selectedId = n.id;
+    treeHasFocus = true;
+    render();
+    return true;
+  }
+
+  return false;
+}
 
 function renderNode(n) {
   const li = document.createElement('li');
@@ -527,13 +603,24 @@ function renderNode(n) {
   row.dataset.id = n.id;
   row.className = 'row' + ((treeHasFocus && n.id === selectedId) ? ' sel' : '');
   row.tabIndex = 0;
-  row.innerHTML = esc(n.name);
+
+  const label = document.createElement('span');
+  label.className = 'label';
+
+  if (n.nameHtml) label.innerHTML = n.nameHtml;
+  else label.textContent = n.name || '';
+
+  row.appendChild(label);
 
   const act = document.createElement('span');
   act.className = 'act';
 
   {
-    const plus = makeBtn('+', (e) => { e.stopPropagation(); selectedId = n.id; addSibling(n.id); });
+    const plus = makeBtn('+', (e) => {
+      e.stopPropagation();
+      selectedId = n.id;
+      addSibling(n.id);
+    });
     act.appendChild(plus);
   }
 
@@ -549,12 +636,20 @@ function renderNode(n) {
   }
 
   if (canHaveChild(n)) {
-    const child = makeBtn('>', (e) => { e.stopPropagation(); selectedId = n.id; addChild(n.id); });
+    const child = makeBtn('>', (e) => {
+      e.stopPropagation();
+      selectedId = n.id;
+      addChild(n.id);
+    });
     act.appendChild(child);
   }
 
   if (n.id !== root.id) {
-    const del = makeBtn('x', (e) => { e.stopPropagation(); selectedId = n.id; removeSelected(); });
+    const del = makeBtn('x', (e) => {
+      e.stopPropagation();
+      selectedId = n.id;
+      removeSelected();
+    });
     act.appendChild(del);
   } else {
     const lock = document.createElement('span');
@@ -566,23 +661,12 @@ function renderNode(n) {
 
   row.appendChild(act);
 
-  row.addEventListener('click', () => {
-    if (isTreeLocked()) return;
-    selectedId = n.id;
-    treeHasFocus = true;
-    render();
+  row.addEventListener('click', (e) => {
+    handleRowMouseHotkeys(e, n, "Click");
   });
 
-  // double click -> rename
   row.addEventListener('dblclick', (e) => {
-    if (isTreeLocked()) return;
-    if (e.target.closest('.act')) return; // not on buttons
-    e.preventDefault();
-    e.stopPropagation();
-    selectedId = n.id;
-    treeHasFocus = true;
-    render();
-    startRename(n.id);
+    handleRowMouseHotkeys(e, n, "DblClick");
   });
 
   row.addEventListener('keydown', (e) => {
@@ -590,40 +674,101 @@ function renderNode(n) {
       return;
     }
 
-    // undo/redo
     if (isUndoHotkey(e)) {
       e.preventDefault();
       undo();
       return;
     }
+
     if (isRedoHotkey(e)) {
       e.preventDefault();
       redo();
       return;
     }
 
-    // Shift+Right/Left -> indent/outdent
-    // indent / outdent
-if (isHotkey(e, "indent")) { e.preventDefault(); selectedId=n.id; indentNode(n.id); return; }
-if (isHotkey(e, "outdent")) { e.preventDefault(); selectedId=n.id; outdentNode(n.id); return; }
+    if (isHotkey(e, "indent")) {
+      e.preventDefault();
+      selectedId = n.id;
+      indentNode(n.id);
+      return;
+    }
 
-// навигация
-if (isHotkey(e, "navLeft")) { e.preventDefault(); goParent(n.id); return; }
-if (isHotkey(e, "navRight")) { e.preventDefault(); goDeeper(n.id); return; }
-if (isHotkey(e, "navUp")) { e.preventDefault(); selectedId=n.id; moveSelection(-1); return; }
-if (isHotkey(e, "navDown")) { e.preventDefault(); selectedId=n.id; moveSelection(+1); return; }
+    if (isHotkey(e, "outdent")) {
+      e.preventDefault();
+      selectedId = n.id;
+      outdentNode(n.id);
+      return;
+    }
 
-// перемещение внутри уровня
-if (isHotkey(e, "moveUp")) { e.preventDefault(); selectedId=n.id; moveWithinParent(-1); return; }
-if (isHotkey(e, "moveDown")) { e.preventDefault(); selectedId=n.id; moveWithinParent(+1); return; }
+    if (isHotkey(e, "navLeft")) {
+      e.preventDefault();
+      goParent(n.id);
+      return;
+    }
 
-// rename / delete
-if (isHotkey(e, "rename")) { e.preventDefault(); selectedId=n.id; treeHasFocus=true; render(); startRename(n.id); return; }
-if (isHotkey(e, "delete")) { e.preventDefault(); selectedId=n.id; removeSelected(); return; }
+    if (isHotkey(e, "navRight")) {
+      e.preventDefault();
+      goDeeper(n.id);
+      return;
+    }
 
-// add
-if (isHotkey(e, "addChild")) { e.preventDefault(); selectedId=n.id; addChild(n.id); return; }
-if (isHotkey(e, "addSibling")) { e.preventDefault(); selectedId=n.id; addSibling(n.id); return; }
+    if (isHotkey(e, "navUp")) {
+      e.preventDefault();
+      selectedId = n.id;
+      moveSelection(-1);
+      return;
+    }
+
+    if (isHotkey(e, "navDown")) {
+      e.preventDefault();
+      selectedId = n.id;
+      moveSelection(+1);
+      return;
+    }
+
+    if (isHotkey(e, "moveUp")) {
+      e.preventDefault();
+      selectedId = n.id;
+      moveWithinParent(-1);
+      return;
+    }
+
+    if (isHotkey(e, "moveDown")) {
+      e.preventDefault();
+      selectedId = n.id;
+      moveWithinParent(+1);
+      return;
+    }
+
+    if (isHotkey(e, "rename")) {
+      e.preventDefault();
+      selectedId = n.id;
+      treeHasFocus = true;
+      render();
+      startRename(n.id);
+      return;
+    }
+
+    if (isHotkey(e, "delete")) {
+      e.preventDefault();
+      selectedId = n.id;
+      removeSelected();
+      return;
+    }
+
+    if (isHotkey(e, "addChild")) {
+      e.preventDefault();
+      selectedId = n.id;
+      addChild(n.id);
+      return;
+    }
+
+    if (isHotkey(e, "addSibling")) {
+      e.preventDefault();
+      selectedId = n.id;
+      addSibling(n.id);
+      return;
+    }
   });
 
   li.appendChild(row);
@@ -725,50 +870,99 @@ document.getElementById('tree').addEventListener('click', (e) => {
 
 window.addEventListener('keydown', (e) => {
   if (isTreeLocked()) return;
+
   const active = document.activeElement;
   const isRow = active && active.classList && active.classList.contains('row');
   const isEditing = active && active.tagName === 'INPUT' && active.classList && active.classList.contains('edit');
 
-  // If focus is on row or input — their handlers handle hotkeys (incl. undo/redo)
   if (isRow || isEditing) return;
-
   if (!treeHasFocus) return;
   if (!selectedId) return;
 
-  // undo/redo
   if (isUndoHotkey(e)) {
     e.preventDefault();
     undo();
     return;
   }
+
   if (isRedoHotkey(e)) {
     e.preventDefault();
     redo();
     return;
   }
 
-  // indent/outdent
-  // indent / outdent
-if (isHotkey(e, "indent"))  { e.preventDefault(); indentNode(selectedId); return; }
-if (isHotkey(e, "outdent")) { e.preventDefault(); outdentNode(selectedId); return; }
+  if (isHotkey(e, "indent")) {
+    e.preventDefault();
+    indentNode(selectedId);
+    return;
+  }
 
-// навигация
-if (isHotkey(e, "navLeft"))  { e.preventDefault(); goParent(selectedId); return; }
-if (isHotkey(e, "navRight")) { e.preventDefault(); goDeeper(selectedId); return; }
-if (isHotkey(e, "navUp"))    { e.preventDefault(); moveSelection(-1); return; }
-if (isHotkey(e, "navDown"))  { e.preventDefault(); moveSelection(+1); return; }
+  if (isHotkey(e, "outdent")) {
+    e.preventDefault();
+    outdentNode(selectedId);
+    return;
+  }
 
-// перемещение внутри уровня
-if (isHotkey(e, "moveUp"))   { e.preventDefault(); moveWithinParent(-1); return; }
-if (isHotkey(e, "moveDown")) { e.preventDefault(); moveWithinParent(+1); return; }
+  if (isHotkey(e, "navLeft")) {
+    e.preventDefault();
+    goParent(selectedId);
+    return;
+  }
 
-// rename / delete
-if (isHotkey(e, "rename")) { e.preventDefault(); render(); startRename(selectedId); return; }
-if (isHotkey(e, "delete")) { e.preventDefault(); removeSelected(); return; }
+  if (isHotkey(e, "navRight")) {
+    e.preventDefault();
+    goDeeper(selectedId);
+    return;
+  }
 
-// add
-if (isHotkey(e, "addChild"))   { e.preventDefault(); addChild(selectedId); return; }
-if (isHotkey(e, "addSibling")) { e.preventDefault(); addSibling(selectedId); return; }
+  if (isHotkey(e, "navUp")) {
+    e.preventDefault();
+    moveSelection(-1);
+    return;
+  }
+
+  if (isHotkey(e, "navDown")) {
+    e.preventDefault();
+    moveSelection(+1);
+    return;
+  }
+
+  if (isHotkey(e, "moveUp")) {
+    e.preventDefault();
+    moveWithinParent(-1);
+    return;
+  }
+
+  if (isHotkey(e, "moveDown")) {
+    e.preventDefault();
+    moveWithinParent(+1);
+    return;
+  }
+
+  if (isHotkey(e, "rename")) {
+    e.preventDefault();
+    render();
+    startRename(selectedId);
+    return;
+  }
+
+  if (isHotkey(e, "delete")) {
+    e.preventDefault();
+    removeSelected();
+    return;
+  }
+
+  if (isHotkey(e, "addChild")) {
+    e.preventDefault();
+    addChild(selectedId);
+    return;
+  }
+
+  if (isHotkey(e, "addSibling")) {
+    e.preventDefault();
+    addSibling(selectedId);
+    return;
+  }
 });
 
 /* ======== tests ======== */
@@ -778,9 +972,11 @@ function assert(cond, msg) {
 }
 
 function runTests() {
-  const tRoot = makeNode(LEVEL.COMPANY, 'Компания');
+  const tRoot = makeNode(LEVEL.COMPANY, 'Проект');
 
-  function tFind(id) { return findWithParent(tRoot, id); }
+  function tFind(id) {
+    return findWithParent(tRoot, id);
+  }
 
   function tAddChild(pid) {
     const r = tFind(pid);
@@ -840,7 +1036,7 @@ function runTests() {
   assert(nope === null, 'no children under role');
   assert(findWithParent(tRoot, r1).node.children.length === before, 'role still leaf');
 
-  const tRoot2 = makeNode(LEVEL.COMPANY, 'Компания');
+  const tRoot2 = makeNode(LEVEL.COMPANY, 'Проект');
   const pA = makeNode(LEVEL.PROJECT, 'P1');
   const pB = makeNode(LEVEL.PROJECT, 'P2');
   const dB = makeNode(LEVEL.DEPT, 'D2');
@@ -873,15 +1069,8 @@ function runTests() {
   console.log('All tests passed');
 }
 
-
-
 render();
 
 if (new URLSearchParams(location.search).get('test') === '1') {
   runTests();
 }
-
-
-
-
-

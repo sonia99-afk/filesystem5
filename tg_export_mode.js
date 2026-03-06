@@ -82,6 +82,7 @@
       case 1: return '- ';
       case 2: return '- - ';
       case 3: return '- - - ';
+      case 4: return '- - - - ';
       default: return '';
     }
   }
@@ -126,7 +127,7 @@
       if (!name) continue;
   
       // Приводим уровень к 0..3
-      const desiredLevel = Math.max(0, Math.min(3, level));
+      const desiredLevel = Math.max(0, Math.min(4, level));
   
       const node = {
         id: Math.random().toString(36).slice(2),
@@ -159,7 +160,7 @@
           name:
             (typeof DEFAULT_NAME !== "undefined" && DEFAULT_NAME[placeholderLevel])
               ? DEFAULT_NAME[placeholderLevel]
-              : (placeholderLevel === 1 ? "Проект" : placeholderLevel === 2 ? "Отдел" : "Должность"),
+              : (placeholderLevel === 1 ? "Проект" : placeholderLevel === 2 ? "Процесс" : placeholderLevel === 2 ? "Блок задач" : "Шаг"),
           children: []
         };
   

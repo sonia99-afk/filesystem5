@@ -19,6 +19,7 @@
       if (!ae) return false;
       if (ae.tagName === "INPUT" && ae.classList?.contains("edit")) return true;
       if (ae.tagName === "TEXTAREA" && ae.classList?.contains("tg-export")) return true;
+      if (ae.isContentEditable) return true;
       return false;
     }
   

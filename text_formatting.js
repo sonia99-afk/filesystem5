@@ -75,6 +75,24 @@
       if (ae.isContentEditable) return true;
       return false;
     }
+
+    function activeRichEditor() {
+      const ae = document.activeElement;
+      if (ae && ae.classList?.contains("edit-rich") && ae.isContentEditable) return ae;
+      return null;
+    }
+    
+    function applyInlineFmt(flagKey) {
+      const map = { b: "bold", i: "italic", u: "underline", s: "strikeThrough" };
+      const cmd = map[flagKey];
+      if (!cmd) return;
+      document.execCommand(cmd, false, null);
+    }
+
+
+
+
+
   
     function isTreeActive() {
       const h = host();
@@ -161,11 +179,20 @@
       if (!b || b.__fmtBound) return;
       b.__fmtBound = true;
   
-      b.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleOnTargets(flagKey);
-      });
+      b.addEventListener("mousedown", (e) => e.preventDefault());   // не теряем выделение
+b.addEventListener("pointerdown", (e) => e.preventDefault()); // на всякий
+
+b.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (activeRichEditor()) {
+    applyInlineFmt(flagKey);
+    return;
+  }
+
+  toggleOnTargets(flagKey);
+});
     }
   
     function syncButtons() {
@@ -197,37 +224,21 @@
     // ---- Hotkeys ----
     function handleHotkeys(e) {
       if (window.hotkeysMode === "custom") return;
-      if (isEditingNow()) return;
-      if (!isTreeActive()) return;
-  
+    
+      const inRich = !!activeRichEditor();
+    
       if (typeof window.isHotkey !== "function") return;
-  
+    
       const stop = () => {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation?.();
       };
-  
-      if (window.isHotkey(e, "bold")) {
-        stop();
-        toggleOnTargets("b");
-        return;
-      }
-      if (window.isHotkey(e, "italic")) {
-        stop();
-        toggleOnTargets("i");
-        return;
-      }
-      if (window.isHotkey(e, "underline")) {
-        stop();
-        toggleOnTargets("u");
-        return;
-      }
-      if (window.isHotkey(e, "strike")) {
-        stop();
-        toggleOnTargets("s");
-        return;
-      }
+    
+      if (window.isHotkey(e, "bold"))      { stop(); inRich ? applyInlineFmt("b") : toggleOnTargets("b"); return; }
+      if (window.isHotkey(e, "italic"))    { stop(); inRich ? applyInlineFmt("i") : toggleOnTargets("i"); return; }
+      if (window.isHotkey(e, "underline")) { stop(); inRich ? applyInlineFmt("u") : toggleOnTargets("u"); return; }
+      if (window.isHotkey(e, "strike"))    { stop(); inRich ? applyInlineFmt("s") : toggleOnTargets("s"); return; }
     }
   
     window.addEventListener("keydown", handleHotkeys, true);

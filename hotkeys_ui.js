@@ -71,6 +71,7 @@
       if (t === "ArrowDown") return "↓";
       if (t === "ArrowLeft") return "←";
       if (t === "ArrowRight") return "→";
+      if (t === "DblClick") return "DblClick";
       return t;
     };
 

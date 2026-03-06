@@ -21,11 +21,15 @@
     addSibling: "Enter",
     addChild: "Shift+Enter",
 
+    addSiblingClick: "Alt+Click",
+    addChildClick: "Alt+Shift+Click",
+
     // Навигация
     navUp: "ArrowUp",
     navDown: "ArrowDown",
     navLeft: "ArrowLeft",
     navRight: "ArrowRight",
+    navClick: "Click",
 
     // Перемещение внутри уровня
     moveUp: "Shift+ArrowUp",
@@ -46,12 +50,17 @@
     deepClick: "Primary+Shift+Click",
 
     // Прочее
-    rename: "Ё",
+    rename: "`",
+    renameClick: "DblClick",
     delete: "Backspace",
+    deleteClick: "Shift+Click",
 
     // Undo/Redo
     undo: "Primary+Z",
     redo: "Primary+Shift+Z",
+
+    undoClick: "Ctrl+DblClick",
+    redoClick: "Ctrl+Alt+DblClick"
   };
 
   // Display label for Primary in UI
@@ -71,6 +80,7 @@
     if (raw === " " || raw === "Spacebar" || raw === "Space") return "Space";
     if (raw === "+") return "Plus";
     if (raw === "Клик") return "Click";
+    if (raw === "`" || raw === "Ё" || raw === "ё") return "`";
 
     const up = raw.toUpperCase();
 
@@ -161,6 +171,8 @@
   function findConflicts() {
     const map = new Map();
     const conflicts = new Set();
+
+    
 
     for (const [action, comboRaw] of Object.entries(current)) {
       const combo = normalizeCombo(comboRaw);
