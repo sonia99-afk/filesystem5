@@ -225,6 +225,7 @@
 
     clearEditing(false);
     updateConflicts();
+    window.syncHotkeysTable?.();
   }
 
   function init() {
@@ -320,6 +321,7 @@
 
         clearEditing(false);
         updateConflicts();
+        window.syncHotkeysTable?.();
       },
       true
     );

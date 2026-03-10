@@ -154,6 +154,8 @@
     } catch (_) {}
   }
 
+  window.syncHotkeysTable = syncHotkeysTable;
+
   function takeSnapshot() {
     snapshot = window.hotkeys?.getAll?.() || null;
   }
