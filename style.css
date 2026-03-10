@@ -430,3 +430,42 @@ td.conflict{
 .rt-u{ text-decoration:underline; }
 .rt-s{ text-decoration:line-through; }
 .rt-u.rt-s{ text-decoration: underline line-through; }
+
+
+
+
+
+.hotkeys td[data-action]{
+  position: relative;
+  padding-right: 24px;
+}
+
+.hk-clear{
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  line-height: 12px;
+  text-align: center;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  font-size: 12px;
+  color: #666;
+  background: #fff;
+}
+
+.hotkeys td[data-action]:hover .hk-clear{
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.hk-clear:hover{
+  border-color: #999;
+  color: #000;
+  background: #f3f3f3;
+}

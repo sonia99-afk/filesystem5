@@ -39,13 +39,17 @@
   }
 
   function platform() {
-    return window.hotkeys?.getPlatformInfo?.() || { primaryToken: "Primary", primaryLabel: "Ctrl" };
+    return window.hotkeys?.getPlatformInfo?.() || {
+      primaryToken: "Primary",
+      primaryLabel: "Ctrl",
+    };
   }
 
   function prettyHotkey(v) {
     const { primaryToken, primaryLabel } = platform();
 
     if (typeof v !== "string") return String(v ?? "");
+    if (v.trim() === "") return "";
     if (v.trim() === "+") return "+";
 
     const rawTokens = v.split("+").map((s) => s.trim()).filter(Boolean);
@@ -59,13 +63,14 @@
     };
 
     const tokens = [...rawTokens].sort((a, b) => {
-      const pa = prio(a), pb = prio(b);
+      const pa = prio(a);
+      const pb = prio(b);
       if (pa !== pb) return pa - pb;
       return String(a).localeCompare(String(b));
     });
 
     const mapToken = (t) => {
-      if (t === primaryToken) return primaryLabel; // Ctrl / Cmd
+      if (t === primaryToken) return primaryLabel;
       if (t === "Plus") return "+";
       if (t === "ArrowUp") return "↑";
       if (t === "ArrowDown") return "↓";
@@ -75,8 +80,39 @@
       return t;
     };
 
-    // Пользователь в UI видит “Ctrl/Cmd”
     return tokens.map(mapToken).join("+");
+  }
+
+  function attachClearButton(td, action, value) {
+    td.querySelector(".hk-clear")?.remove();
+
+    // крестик только в режиме редактирования
+    if (window.hotkeysMode !== "custom") return;
+    if (!value) return;
+
+    const btn = document.createElement("span");
+    btn.className = "hk-clear";
+    btn.textContent = "×";
+    btn.title = "Удалить хоткей";
+
+    ["mousedown", "pointerdown", "dblclick"].forEach((ev) => {
+      btn.addEventListener(ev, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation?.();
+      });
+    });
+
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation?.();
+
+      window.hotkeys?.set?.(action, "");
+      syncHotkeysTable();
+    });
+
+    td.appendChild(btn);
   }
 
   function syncLabelAndButtons() {
@@ -99,12 +135,18 @@
     try {
       document.querySelectorAll("td[data-action]").forEach((td) => {
         const action = td.dataset.action;
-        const v = window.hotkeys?.get?.(action);
-        if (typeof v === "string") td.textContent = prettyHotkey(v);
+        const v = window.hotkeys?.get?.(action) || "";
+
+        td.textContent = v ? prettyHotkey(v) : "";
+        attachClearButton(td, action, v);
       });
 
       const conflicts = window.hotkeys?.findConflicts?.() || new Set();
-      document.querySelectorAll("td[data-action].conflict").forEach((td) => td.classList.remove("conflict"));
+
+      document.querySelectorAll("td[data-action].conflict").forEach((td) => {
+        td.classList.remove("conflict");
+      });
+
       document.querySelectorAll("td[data-action]").forEach((td) => {
         const action = td.dataset.action;
         if (conflicts.has(action)) td.classList.add("conflict");
@@ -129,6 +171,7 @@
     takeSnapshot();
     window.hotkeysMode = "custom";
     syncLabelAndButtons();
+    syncHotkeysTable();
   }
 
   function exitEditModeKeep() {
@@ -136,6 +179,7 @@
     window.hotkeysMode = "builtin";
     snapshot = null;
     syncLabelAndButtons();
+    syncHotkeysTable();
   }
 
   function exitEditModeDiscard() {
@@ -144,6 +188,7 @@
     window.hotkeysMode = "builtin";
     snapshot = null;
     syncLabelAndButtons();
+    syncHotkeysTable();
   }
 
   function resetToDefaults() {
@@ -166,8 +211,6 @@
     if (bReset) bReset.addEventListener("click", resetToDefaults);
 
     syncLabelAndButtons();
-
-    // На всякий случай: если hotkeys_config загрузился позже — обновим таблицу
     setTimeout(syncHotkeysTable, 0);
   }
 

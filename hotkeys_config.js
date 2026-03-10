@@ -21,8 +21,8 @@
     addSibling: "Enter",
     addChild: "Shift+Enter",
 
-    addSiblingClick: "Alt+Click",
-    addChildClick: "Alt+Shift+Click",
+    addSiblingClick: "",
+    addChildClick: "",
 
     // Навигация
     navUp: "ArrowUp",
@@ -53,14 +53,14 @@
     rename: "Ё",
     renameClick: "DblClick",
     delete: "Backspace",
-    deleteClick: "Shift+Click",
+    deleteClick: "",
 
     // Undo/Redo
     undo: "Primary+Z",
     redo: "Primary+Shift+Z",
 
-    undoClick: "Ctrl+DblClick",
-    redoClick: "Ctrl+Alt+DblClick"
+    undoClick: "",
+    redoClick: ""
   };
 
   // Display label for Primary in UI
@@ -183,6 +183,10 @@ if (isMac()) {
     for (const [action, comboRaw] of Object.entries(current)) {
       const combo = normalizeCombo(comboRaw);
       const arr = map.get(combo) || [];
+
+      // пустой хоткей = не назначен, это не конфликт
+  if (!combo) continue;
+
       arr.push(action);
       map.set(combo, arr);
     }
