@@ -201,6 +201,7 @@
 
     const backBtn = document.createElement('button');
     backBtn.textContent = 'Сохранить';
+    backBtn.className = 'btnn';
 
     
 

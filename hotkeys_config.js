@@ -80,12 +80,12 @@
     if (raw === " " || raw === "Spacebar" || raw === "Space") return "Space";
     if (raw === "+") return "Plus";
     if (raw === "Клик") return "Click";
-    if (raw === "Ё" || raw === "ё") return "ё";
+    // if (raw === "Ё" || raw === "ё") return "ё";
 
 if (isMac()) {
-  if (raw === "\\") return "ё";
+  if (raw === "\\" || raw === "Ё" || raw === "ё") return "\\";
 } else {
-  if (raw === "`") return "ё";
+  if (raw === "`" || raw === "Ё" || raw === "ё") return "`";
 }
 
     const up = raw.toUpperCase();

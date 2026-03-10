@@ -11,29 +11,29 @@
     <div class="layout">
       <div class="main">
         <div class="hint">
-          <button onclick="undo()" class="btn-undo">
+          <button class="btnn" onclick="undo()" style="margin-right: 10px;">
           <svg viewBox="0 0 24 24">
             <path d="M9 14L4 9l5-5"/>
             <path d="M4 9h9a7 7 0 1 1 0 14h-1"/>
           </svg>
         </button>
 
-        <button onclick="redo()">
+        <button class="btnn" onclick="redo()" style="margin-right: 21px;">
           <svg viewBox="0 0 24 24">
             <path d="M15 14l5-5-5-5"/>
             <path d="M20 9h-9a7 7 0 1 0 0 14h1"/>
           </svg>
           </button>
-          <span class="mode-toggle">
-            <button id="modeStd" onclick="setTelegramMode(false)">Схема</button>
-            <button id="modeText" onclick="setTelegramMode(true)">Текст</button>
+          <span>
+            <button id="modeStd" onclick="setTelegramMode(false)" class="btnn addmargin">Схема</button>
+            <button id="modeText" onclick="setTelegramMode(true)" class="btnn">Текст</button>
           </span>
-          <button id="tgCopy">Копировать</button>
-          <div class="ftmblock">
-            <button id="fmtBold">B</button>
-            <button id="fmtItalic" class="fmtItalic">I</button>
-            <button id="fmtUnderline">U</button>
-            <button id="fmtStrike">S</button>
+          <button id="tgCopy" class="btnn">Копировать</button>
+            <div class="formatblock">
+            <button id="fmtBold" class="btnn"><b>B</b></button>
+            <button id="fmtItalic" class="btnn fmtItalic"><i>I</i></button>
+            <button id="fmtUnderline" class="btnn"><u>U</u></button>
+            <button id="fmtStrike" class="btnn"><s>S</s></button>
           </div>
         </div>
   
@@ -193,7 +193,7 @@
               <td>Зачёркнутый</td>
               <td data-action="strike">Ctrl/Cmd+Shift+X</td>
               <td>-</td>
-              <td>S</td>
+              <td><s>S</s></td>
             </tr>
             
             <tr>
@@ -207,10 +207,11 @@
 
         <div class="hkbar">
           <span class="hk-btns">
-            <button id="hkEditBtn" class="hkEditBtn">Редактировать</button>
-            <button id="hkSaveBtn" class="hkSaveBtn">Сохранить</button>
-            <button id="hkDiscardBtn" class="hkDiscardBtn">Не сохранять</button>
-            <button id="hotkeysResetBtn" class="hotkeysResetBtn">Сброс к исходным</button>
+            <!-- class="hkEditBtn"  class="hkSaveBtn"  class="hkDiscardBtn"  class="hotkeysResetBtn" -->
+            <button id="hkEditBtn" class="btnn">Редактировать</button>
+            <button id="hkSaveBtn" class="btnn save">Сохранить</button>
+            <button id="hkDiscardBtn" class="btnn dontsave">Не сохранять</button>
+            <button id="hotkeysResetBtn" class="btnn">Сброс к исходным</button>
           </span>
         </div>
       
@@ -221,6 +222,8 @@
       
     </div>
   </div>
+
+  
 
   <script src="hotkeys_config.js"></script>
   <script src="rename.js"></script>

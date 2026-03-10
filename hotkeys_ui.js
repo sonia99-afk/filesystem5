@@ -120,12 +120,13 @@
     const bSave = el(IDs.save);
     const bDiscard = el(IDs.discard);
     const bReset = el(IDs.reset);
-
+  
     const on = isEditing();
-
-    setInactive(bEdit, on);
-    setPressed(bEdit, on);
-
+  
+    // Редактировать: не дизейблим, только показываем "зажатой"
+    setInactive(bEdit, false);
+    if (bEdit) bEdit.classList.toggle("is-active", on);
+  
     setInactive(bSave, !on);
     setInactive(bDiscard, !on);
     setInactive(bReset, !on);
