@@ -50,7 +50,7 @@
     deepClick: "Primary+Shift+Click",
 
     // Прочее
-    rename: "`",
+    rename: "Ё",
     renameClick: "DblClick",
     delete: "Backspace",
     deleteClick: "Shift+Click",
@@ -80,7 +80,13 @@
     if (raw === " " || raw === "Spacebar" || raw === "Space") return "Space";
     if (raw === "+") return "Plus";
     if (raw === "Клик") return "Click";
-    if (raw === "`" || raw === "Ё" || raw === "ё") return "`";
+    if (raw === "Ё" || raw === "ё") return "ё";
+
+if (isMac()) {
+  if (raw === "\\") return "ё";
+} else {
+  if (raw === "`") return "ё";
+}
 
     const up = raw.toUpperCase();
 

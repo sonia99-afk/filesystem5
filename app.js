@@ -150,6 +150,18 @@ function isHotkey(e, action) {
   const want = normalize ? normalize(wantRaw) : wantRaw;
   const have = normalize ? normalize(haveRaw) : haveRaw;
 
+  // special-case: rename aliases by platform
+if (action === "rename") {
+  const isMac = !!window.hotkeys?.getPlatformInfo?.().isMac;
+
+  const allowed = isMac
+    ? new Set(["Ё", "ё", "\\"])
+    : new Set(["Ё", "ё", "`"]);
+
+  const key = String(e.key || "");
+  if (allowed.has(key)) return true;
+}
+
   return have === want;
 }
 
