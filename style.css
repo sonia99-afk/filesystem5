@@ -790,3 +790,16 @@ body.hotkeys-edit-mode #tree .label{
   color: var(--no-activ-color);
 }
 
+/* линии дерева в режиме редактирования хоткеев */
+body.hotkeys-edit-mode #tree .trunk{
+  border-left-color: var(--no-activ-color);
+}
+
+body.hotkeys-edit-mode #tree .plink{
+  border-left-color: var(--no-activ-color);
+}
+
+body.hotkeys-edit-mode #tree li::before{
+  border-top-color: var(--no-activ-color);
+}
+
