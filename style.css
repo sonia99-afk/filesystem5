@@ -516,10 +516,9 @@ td.conflict{
   padding-right: 6px;
   padding-left: 6px;
   font-family:Arial, Helvetica, sans-serif;
-  background:#fff;
   color:#000;
-  border: 1px solid gray;
-  background-color: #eeeeee;
+  border: 1px solid #757575;
+  background-color: #eee;
 }
 
 .btnn:hover {
@@ -527,16 +526,18 @@ td.conflict{
 }
 
 .btnn:active {
-  background-color: #dcdcdc;
+  background-color: #cecece;
 }
 
 .btnn.is-active {
-  background-color: var(--active-color);
+  background-color: #dcdcdc;
+  color:var(--no-activ-color);
 }
 
 .btnn:disabled {
   color:var(--no-activ-color);
   border-color: #b5b5b5;
+  background-color: #eee;
 }
 
 
