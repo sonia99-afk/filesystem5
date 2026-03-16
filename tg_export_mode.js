@@ -210,8 +210,6 @@
 
     ta.className = 'tg-export';
     ta.value = lastAscii;
-    ta.style.width = '35%';
-    ta.style.minHeight = '300px';
 
 
         // чтобы события из tg-UI не долетали до обработчика #tree.click в app.js

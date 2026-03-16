@@ -173,22 +173,25 @@
     if (isEditing()) return;
     takeSnapshot();
     window.hotkeysMode = "custom";
+    document.body.classList.add("hotkeys-edit-mode");
     syncLabelAndButtons();
     syncHotkeysTable();
   }
-
+  
   function exitEditModeKeep() {
     if (!isEditing()) return;
     window.hotkeysMode = "builtin";
+    document.body.classList.remove("hotkeys-edit-mode");
     snapshot = null;
     syncLabelAndButtons();
     syncHotkeysTable();
   }
-
+  
   function exitEditModeDiscard() {
     if (!isEditing()) return;
     restoreSnapshot();
     window.hotkeysMode = "builtin";
+    document.body.classList.remove("hotkeys-edit-mode");
     snapshot = null;
     syncLabelAndButtons();
     syncHotkeysTable();
@@ -212,7 +215,7 @@
     if (bSave) bSave.addEventListener("click", exitEditModeKeep);
     if (bDiscard) bDiscard.addEventListener("click", exitEditModeDiscard);
     if (bReset) bReset.addEventListener("click", resetToDefaults);
-
+    document.body.classList.toggle("hotkeys-edit-mode", isEditing());
     syncLabelAndButtons();
     setTimeout(syncHotkeysTable, 0);
   }

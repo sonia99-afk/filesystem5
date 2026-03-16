@@ -7,41 +7,58 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="wrap">
-    <div class="layout">
-      <div class="main">
-        <div class="hint">
-          <button class="btnn" onclick="undo()" style="margin-right: 10px;">
-          <svg viewBox="0 0 24 24">
-            <path d="M9 14L4 9l5-5"/>
-            <path d="M4 9h9a7 7 0 1 1 0 14h-1"/>
-          </svg>
+
+  <div class="grid-container">
+
+        <div class="leftbar">
+          <div class="projects-title">Проекты</div>
+
+          <div class="projects-list">
+            <button class="project-item in-act" type="button">Проект</button>
+          </div>
+          
+          <button class="project-add" type="button">+ новый</button>
+        </div>
+  
+      <div class="hint">
+        <button class="btnn" onclick="undo()" style="margin-right: 10px;">
+        <svg viewBox="0 0 24 24">
+          <path d="M9 14L4 9l5-5"/>
+          <path d="M4 9h9a7 7 0 1 1 0 14h-1"/>
+        </svg>
         </button>
 
         <button class="btnn" onclick="redo()" style="margin-right: 21px;">
-          <svg viewBox="0 0 24 24">
-            <path d="M15 14l5-5-5-5"/>
-            <path d="M20 9h-9a7 7 0 1 0 0 14h1"/>
-          </svg>
-          </button>
-          <span>
-            <button id="modeStd" onclick="setTelegramMode(false)" class="btnn addmargin">Схема</button>
-            <button id="modeText" onclick="setTelegramMode(true)" class="btnn">Текст</button>
-          </span>
-          <button id="tgCopy" class="btnn">Копировать</button>
-            <div class="formatblock">
-            <button id="fmtBold" class="btnn"><b>B</b></button>
-            <button id="fmtItalic" class="btnn fmtItalic"><i>I</i></button>
-            <button id="fmtUnderline" class="btnn"><u>U</u></button>
-            <button id="fmtStrike" class="btnn"><s>S</s></button>
-          </div>
+        <svg viewBox="0 0 24 24">
+          <path d="M15 14l5-5-5-5"/>
+          <path d="M20 9h-9a7 7 0 1 0 0 14h1"/>
+        </svg>
+        </button>
+        <span>
+          <button id="modeStd" onclick="setTelegramMode(false)" class="btnn addmargin">Схема</button>
+          <button id="modeText" onclick="setTelegramMode(true)" class="btnn">Текст</button>
+        </span>
+        <button id="tgCopy" class="btnn">Копировать</button>
+          <div class="formatblock">
+          <button id="fmtBold" class="btnn"><b>B</b></button>
+          <button id="fmtItalic" class="btnn fmtItalic"><i>I</i></button>
+          <button id="fmtUnderline" class="btnn"><u>U</u></button>
+          <button id="fmtStrike" class="btnn"><s>S</s></button>
         </div>
-  
-        <div id="tree"></div>
       </div>
+    
+
+    
+      <div class="main">
+        <div class="tree-scroll">
+          <div id="tree"></div>
+        </div>
+      </div>
+    
   
+   
       <aside class="sidebar">
-        <div class="panel-title">Горячие клавиши</div>
+        <div class="panel-title">Список функций и горячие клавиши</div>
       
         <table class="hotkeys">
           <thead>
@@ -169,10 +186,15 @@
             </tr>
 
             <tr>
-              <td>Текстовый режим</td>
+              <td>Переключение режимов просмотра</td>
               <td>-</td>
               <td>-</td>
-              <td>Текстовый режим</td>
+              <td>
+                <span class="table-toggle-demo">
+                  <button id="modeStd" class="btnn addmargin" disabled>Схема</button>
+                  <button id="modeText" class="btnn">Текст</button>
+                </span>
+              </td>
             </tr>
 
             <tr>
@@ -219,15 +241,13 @@
           <b>Подсветка:</b> выбранные элементы отмечаются голубым.
         </div>
       </aside>
-      
-    </div>
+      </div>
+    
   </div>
-
-  
 
   <script src="hotkeys_config.js"></script>
   <script src="rename.js"></script>
-  <script src="app.js"></script>
+  <script src="app2.js"></script>
   <script src="hotkeys_editor.js"></script>
   
   <script src="hotkeys_ui.js"></script> 

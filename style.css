@@ -28,6 +28,10 @@ body{ margin:0; font-family:Consolas,"Courier New",monospace; background:#fff; c
       --trunk-dept:12px;
       --trunk-role:12px;
       --trunk-step:12px;
+
+      --no-activ-color: #7a7a7a;
+      --hover-color: #e5e5e5;
+      --active-color: #cecece;
     }
 
     ul{
@@ -82,17 +86,42 @@ body{ margin:0; font-family:Consolas,"Courier New",monospace; background:#fff; c
       pointer-events:none;
     }
 
-    .row{ cursor:pointer; display:inline-block; padding:1px 2px; user-select:none; white-space:nowrap; outline:none; }
-    .row.sel{ background:#eaeaea; }
-
-    .act{
-      margin-left:8px;
-      font-size:12px;
-      visibility:hidden;
-      display:inline-flex;
-      gap:3px;
+    .row{
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      min-width: 0;
+      padding: 1px 2px;
+      user-select: none;
+      white-space: nowrap;
+      outline: none;
     }
-    .row:hover .act{ visibility:visible; }
+    
+    .row .label{
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .act{
+      margin-left: 8px;
+      font-size: 12px;
+      visibility: hidden;
+      display: inline-flex;
+      gap: 3px;
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    
+    .row:hover .act{
+      visibility: visible;
+    }
+
+  
+
+    .row.sel{ background:#eaeaea; }
 
     .btn{
       cursor:pointer;
@@ -154,25 +183,15 @@ body{ margin:0; font-family:Consolas,"Courier New",monospace; background:#fff; c
     /* ---- layout: tree + right panel ---- */
 .wrap{ max-width:none; }
 
-.layout{
-  display:flex;
-  gap:16px;
-  align-items:flex-start;
-}
-
-.main{
-  flex:1 1 auto;
-  min-width:0; /* чтобы дерево не ломало flex */
-}
 
 .sidebar{
   flex:0 0 600px;
-  border:1px solid #000;
   padding:12px;
   background:#fff;
   max-height:calc(100vh - 32px);
   overflow:auto;
-}
+} 
+
 
 .panel-title{
   font-weight:700;
@@ -421,9 +440,22 @@ td.conflict{
   padding:0 2px;
   min-height:1.2em;
   line-height:1.2em;
+
   white-space:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+
+  max-width:520px;
   outline:none;
 }
+
+.edit.edit-rich::-webkit-scrollbar{
+  display:none;
+}
+
+
+
+
 
 .rt-b{ font-weight:700; }
 .rt-i{ font-style:italic; }
@@ -491,7 +523,7 @@ td.conflict{
 }
 
 .btnn:hover {
-  background-color: #e5e5e5;
+  background-color: var(--hover-color);
 }
 
 .btnn:active {
@@ -499,11 +531,11 @@ td.conflict{
 }
 
 .btnn.is-active {
-  background-color: #cecece;
+  background-color: var(--active-color);
 }
 
 .btnn:disabled {
-  color: #7a7a7a;
+  color:var(--no-activ-color);
   border-color: #b5b5b5;
 }
 
@@ -531,3 +563,230 @@ td.conflict{
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
+
+
+
+
+.table-toggle-demo{
+  display: inline-flex;
+  gap: 0;
+}
+
+.table-toggle-demo .btnn{
+  pointer-events: none;
+  margin: 0;
+}
+
+.table-toggle-demo .btnn.addmargin{
+  margin-right: -1px;
+}
+
+
+.drop-preview-overlay{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:10000;
+  display:none;
+}
+
+.drop-preview-h,
+.drop-preview-v{
+  position:fixed;
+  pointer-events:none;
+  box-sizing:border-box;
+}
+
+.drop-preview-h{
+  height:0;
+  border-top:1px dashed #5D5D5D;
+}
+
+.drop-preview-v{
+  width:0;
+  border-left:1px dashed #5D5D5D;
+}
+
+
+
+
+
+
+.grid-container{
+  display: grid;
+  grid-template-columns: 225px minmax(0, 1fr) 700px;
+  grid-template-rows: 84px 1fr;
+  height: 100vh;
+}
+
+.leftbar{
+  grid-column: 1;
+  grid-row: 1 / 3;
+  border-right: 1px solid #989898;
+  padding: 31px;
+  box-sizing: border-box;
+  overflow: auto;
+  width: 225px;
+
+}
+
+.hint{
+  
+  padding-left: 63px;
+  padding-top: 21px;
+  padding-bottom: 21px;
+  height: 84px;
+
+  grid-column: 2 / 4;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  border-bottom: 1px solid #989898;
+  box-sizing: border-box;
+}
+
+.main{
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0;
+  
+  padding-top: 42px;
+  padding-left: 63px;
+  padding-right: 63px;
+
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.tree-scroll{
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.sidebar{
+  grid-column: 3;
+  grid-row: 2;
+  border-left: 1px solid #989898;
+  padding-top: 42px;
+  padding-left: 31px;
+  padding-right: 31px;
+  box-sizing: border-box;
+}
+
+/* фиксируем высоту строки дерева */
+.row{
+  height:20px;
+  line-height:20px;
+  box-sizing: border-box;
+}
+
+li{
+  margin:0;
+}
+
+/* редактор подгоняем под ту же высоту */
+.edit,
+.edit.edit-rich{
+  box-sizing: border-box;
+  height: 1.3em;
+  min-height: 1.3em;
+  line-height: 1.3em;
+  vertical-align: top;
+}
+
+.main textarea{
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 300px;
+}
+
+
+
+
+
+
+
+
+
+.projects-title{
+  margin-bottom: 31px;
+  color: #8d8d8d;
+  line-height: 1.1;
+}
+
+.projects-list{
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.project-item{
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+
+  padding: 5px 30px 5px 10px;
+
+  width: 100%;
+  display: block;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* наведение */
+.project-item:hover{
+  background: var(--hover-color);
+}
+
+.in-act {
+  background-color: #eee;
+  font-weight: bold;
+}
+
+/* нажатие */
+.project-item:active{
+  background: var(--active-color);
+}
+
+
+
+.project-add{
+  border: none;
+  font: inherit;
+  background: transparent;
+  padding-left: 10px;
+  padding-right: 30px;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  color: #8d8d8d;
+  cursor: pointer;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+}
+
+/* наведение */
+.project-add:hover{
+  background: var(--hover-color);
+}
+
+/* нажатие */
+.project-add:active{
+  background: var(--active-color);
+}
+
+
+body.hotkeys-edit-mode #tree .label{
+  color: var(--no-activ-color);
+}
+
