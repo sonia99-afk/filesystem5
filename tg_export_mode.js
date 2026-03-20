@@ -277,11 +277,8 @@ host.append(bar);
     const txt = document.getElementById('modeText');
   
     if (std && txt) {
-      std.classList.toggle('active', !tgMode);
-      txt.classList.toggle('active', tgMode);
-  
-      std.disabled = !tgMode ? true : false; // можно оставить, а можно убрать
-      txt.disabled = tgMode ? true : false;
+      std.classList.toggle('is-active', !tgMode);
+      txt.classList.toggle('is-active', tgMode);
   
       return;
     }

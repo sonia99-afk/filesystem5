@@ -2,9 +2,13 @@
   if (typeof window === "undefined") return;
 
   const DRAG_THRESHOLD = 4;
-  const INDENT_TRIGGER_PX = 22;
   const STROKE = "1px dashed #5D5D5D";
   const BRANCH_LEN = 16;
+
+  // --- НАСТРОЙКИ ЗОН ---
+  const SAME_LEVEL_LEFT_OFFSET_PX = 35;
+  const SAME_LEVEL_TO_CHILD_BOUNDARY_SHIFT_PX = 5;
+  const LAST_BLOCK_EXTRA_DROP_ZONE_PX = 100;
 
   let dragId = null;
   let dragStart = null;
@@ -13,7 +17,89 @@
   let overlay = null;
 
   function rowFromEvent(e) {
-    return e.target?.closest?.(".row") || null;
+    const direct = e.target?.closest?.(".row");
+    if (direct) return direct;
+
+    const x = e.clientX;
+    const y = e.clientY;
+
+    const rows = visibleRows();
+    const lastVisibleRow = getLastVisibleRow();
+
+    for (const row of rows) {
+      const rect = row.getBoundingClientRect();
+      const ul = ulOfRow(row);
+      const li = liOfRow(row);
+      if (!ul || !li) continue;
+
+      const rowsInLevel = getDirectChildRows(ul);
+      const rowIdx = rowsInLevel.indexOf(row);
+      const nextSameLevelRow =
+        rowIdx >= 0 && rowIdx < rowsInLevel.length - 1
+          ? rowsInLevel[rowIdx + 1]
+          : null;
+
+      const rowId = row.dataset?.id;
+      const info = rowId ? findWithParent(root, rowId) : null;
+      const hasChildren = !!(
+        info &&
+        info.node &&
+        info.node.children &&
+        info.node.children.length
+      );
+
+      const isLastVisibleRow = row === lastVisibleRow;
+
+      const label = row.querySelector(":scope > .label");
+      const labelRect = label?.getBoundingClientRect() || rect;
+
+      const sameLevelStartX = rect.left - SAME_LEVEL_LEFT_OFFSET_PX;
+      const sameLevelEndX =
+        labelRect.left + SAME_LEVEL_TO_CHILD_BOUNDARY_SHIFT_PX;
+
+      const normalBottom = rect.bottom;
+
+      // По умолчанию жёлтая зона равна высоте самой строки.
+      let sameLevelBottom = normalBottom;
+
+      // По умолчанию рыжая зона тоже равна высоте самой строки.
+      let childBottom = normalBottom;
+
+      // Если есть дети и есть следующий сосед того же уровня,
+      // тянем жёлтую зону до следующего соседа.
+      if (hasChildren && nextSameLevelRow) {
+        sameLevelBottom = nextSameLevelRow.getBoundingClientRect().top;
+      }
+      // Если есть дети, нет следующего соседа на этом уровне,
+      // и это НЕ самый последний блок дерева,
+      // тянем жёлтую зону до конца видимого поддерева.
+      else if (hasChildren && !nextSameLevelRow && !isLastVisibleRow) {
+        const lastSubtreeRow = getLastVisibleRowInSubtree(li);
+        const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
+        sameLevelBottom = lastRect.bottom;
+      }
+      // Если это самый последний блок дерева,
+      // даём дополнительную зону ниже и для жёлтой, и для рыжей области.
+      else if (isLastVisibleRow) {
+        const lastSubtreeRow = getLastVisibleRowInSubtree(li);
+        const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
+        sameLevelBottom = lastRect.bottom + LAST_BLOCK_EXTRA_DROP_ZONE_PX;
+        childBottom = lastRect.bottom + LAST_BLOCK_EXTRA_DROP_ZONE_PX;
+      }
+
+      const inSameLevelX = x >= sameLevelStartX && x <= sameLevelEndX;
+      const inChildX = x > sameLevelEndX && x <= rect.right;
+
+      if (inSameLevelX && y >= rect.top && y <= sameLevelBottom) {
+        return row;
+      }
+
+      if (inChildX && y >= rect.top && y <= childBottom) {
+        return row;
+      }
+    }
+
+    return null;
   }
 
   function liOfRow(row) {
@@ -34,14 +120,23 @@
       .filter(Boolean);
   }
 
+  function getLastVisibleRowInSubtree(li) {
+    if (!li) return null;
+
+    const rows = Array.from(li.querySelectorAll(".row[data-id]")).filter(
+      (row) => row.getClientRects().length > 0
+    );
+
+    return rows.length ? rows[rows.length - 1] : null;
+  }
+
   function visibleRows() {
     return Array.from(document.querySelectorAll("#tree .row[data-id]"));
   }
 
-  function visiblePreviousRow(row) {
+  function getLastVisibleRow() {
     const rows = visibleRows();
-    const idx = rows.indexOf(row);
-    return idx > 0 ? rows[idx - 1] : null;
+    return rows.length ? rows[rows.length - 1] : null;
   }
 
   function getTrunkXForUl(ul) {
@@ -122,7 +217,8 @@
     if (!dragNode || !targetNode) return false;
     if (dragNode.id === targetNode.id) return false;
     if (isDescendantId(dragNode.id, targetNode.id)) return false;
-    if (typeof canHaveChild === "function" && !canHaveChild(targetNode)) return false;
+    if (typeof canHaveChild === "function" && !canHaveChild(targetNode))
+      return false;
 
     return canPlaceSubtreeAtLevel(dragNode, targetNode.level + 1);
   }
@@ -221,19 +317,30 @@
     const rowsInLevel = getDirectChildRows(ul);
     const rowIdx = rowsInLevel.indexOf(row);
     const isLast = rowIdx === rowsInLevel.length - 1;
+    const nextSameLevelRow =
+      rowIdx >= 0 && rowIdx < rowsInLevel.length - 1
+        ? rowsInLevel[rowIdx + 1]
+        : null;
 
-    const prevSameLevel = rowIdx > 0 ? rowsInLevel[rowIdx - 1] : null;
-    const prevVisible = visiblePreviousRow(row);
-    const separatedByNested =
-      !!prevVisible && !!prevSameLevel && prevVisible !== prevSameLevel;
+    const lastVisibleRow = getLastVisibleRow();
+    const isLastVisibleRow = row === lastVisibleRow;
 
     averageLevelGap(rowsInLevel);
 
-    const topZone = rowRect.top + rowRect.height * 0.28;
     const lowerHalf = rowRect.top + rowRect.height * 0.5;
 
+    const label = row.querySelector(":scope > .label");
+    const labelRect = label?.getBoundingClientRect() || rowRect;
+
+    const sameLevelStartX = rowRect.left - SAME_LEVEL_LEFT_OFFSET_PX;
+    const sameLevelEndX =
+      labelRect.left + SAME_LEVEL_TO_CHILD_BOUNDARY_SHIFT_PX;
+
+    const inSameLevelZoneX =
+      clientX >= sameLevelStartX && clientX <= sameLevelEndX;
+
     const wantChild =
-      clientX >= rowRect.left + INDENT_TRIGGER_PX &&
+      clientX > sameLevelEndX &&
       canMoveToChild(dragInfo.node, targetInfo.node);
 
     if (targetId === root.id && !wantChild) return null;
@@ -242,13 +349,11 @@
       targetInfo.node.children && targetInfo.node.children.length
     );
 
-    // Для вставки рядом / до / после target корень перемещаемого блока
-    // должен стать уровнем target
     if (!canPlaceSubtreeAtLevel(dragInfo.node, targetInfo.node.level)) {
       return null;
     }
 
-    // 5. На новый уровень вложения
+    // Вложение в новый дочерний уровень
     if (wantChild && !hasChildren) {
       const firstLetterEndX = rowRect.left + 8;
       const isRootLevel = ul.dataset.level === "0";
@@ -271,7 +376,7 @@
       };
     }
 
-    // 4. Первым в уровне вложения
+    // Вложение первым в существующий дочерний уровень
     if (wantChild && hasChildren) {
       const childUl = li.querySelector(":scope > ul");
       const firstChildRow =
@@ -298,14 +403,46 @@
       };
     }
 
-    // 3. Последним на одном уровне
-    if (isLast && clientY >= lowerHalf) {
+    // Same-level
+    if (inSameLevelZoneX) {
       const lineX = getTrunkXForUl(ul);
-      const lineY = rowRect.bottom + 2;
-      const verticalHeight = Math.max(6, rowRect.height / 2);
+
+      let lineY = rowRect.bottom;
+      let showVertical = false;
+      let verticalFromY = 0;
+      let verticalHeight = 0;
+
+      if (hasChildren && nextSameLevelRow) {
+        lineY = nextSameLevelRow.getBoundingClientRect().top;
+      } else if (hasChildren && !nextSameLevelRow && !isLastVisibleRow) {
+        const lastSubtreeRow = getLastVisibleRowInSubtree(li);
+        const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
+
+        lineY = lastRect.bottom;
+        showVertical = true;
+        verticalFromY = rowRect.top + rowRect.height / 2;
+        verticalHeight = Math.max(4, lineY - verticalFromY);
+      } else if (isLastVisibleRow) {
+        const lastSubtreeRow = getLastVisibleRowInSubtree(li);
+        const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
+      
+        // Зона в rowFromEvent уже расширена на +100px,
+        // но саму серую линию в жёлтой зоне вниз не тянем.
+        lineY = lastRect.bottom;
+        showVertical = true;
+        verticalFromY = rowRect.top + rowRect.height / 2;
+        verticalHeight = Math.max(4, lineY - verticalFromY);
+      } else if (isLast) {
+        showVertical = true;
+        verticalHeight = Math.max(6, rowRect.height / 2);
+        verticalFromY = lineY - verticalHeight;
+      }
 
       return {
-        kind: "last-in-level",
+        kind:
+          isLastVisibleRow && clientY >= lowerHalf
+            ? "last-in-level"
+            : "after-only",
         dragId,
         targetId,
         parentId: targetInfo.parent ? targetInfo.parent.id : null,
@@ -313,94 +450,14 @@
         lineY,
         horizontalStartX: lineX,
         horizontalEndX: lineX + BRANCH_LEN,
-        showVertical: true,
+        showVertical,
         verticalX: lineX,
-        verticalFromY: lineY - verticalHeight,
+        verticalFromY,
         verticalHeight,
       };
     }
 
-    // 2. Между равными блоками, но разделены вложенностью
-    if (clientY <= topZone && separatedByNested && prevVisible) {
-      const prevVisibleRect = prevVisible.getBoundingClientRect();
-      const lineX = getTrunkXForUl(ul);
-
-      return {
-        kind: "between-after-nested",
-        dragId,
-        targetId,
-        parentId: targetInfo.parent ? targetInfo.parent.id : null,
-        insertMode: "before",
-        lineY: (prevVisibleRect.bottom + rowRect.top) / 2,
-        horizontalStartX: lineX,
-        horizontalEndX: lineX + BRANCH_LEN,
-        showVertical: false,
-        verticalX: 0,
-        verticalFromY: 0,
-        verticalHeight: 0,
-      };
-    }
-
-    // 1. Между равными блоками на одном уровне
-    // if (clientY <= topZone && prevSameLevel) {
-    //   const prevRect = prevSameLevel.getBoundingClientRect();
-    //   const lineX = getTrunkXForUl(ul);
-
-    //   return {
-    //     kind: "between-same-level",
-    //     dragId,
-    //     targetId,
-    //     parentId: targetInfo.parent ? targetInfo.parent.id : null,
-    //     insertMode: "before",
-    //     lineY: (prevRect.bottom + rowRect.top) / 2,
-    //     horizontalStartX: lineX,
-    //     horizontalEndX: lineX + BRANCH_LEN,
-    //     showVertical: false,
-    //     verticalX: 0,
-    //     verticalFromY: 0,
-    //     verticalHeight: 0,
-    //   };
-    // }
-
-    // fallback для последнего элемента
-    if (isLast) {
-      const lineX = getTrunkXForUl(ul);
-      const lineY = rowRect.bottom + 2;
-      const verticalHeight = Math.max(6, rowRect.height / 2);
-
-      return {
-        kind: "last-in-level-fallback",
-        dragId,
-        targetId,
-        parentId: targetInfo.parent ? targetInfo.parent.id : null,
-        insertMode: "after",
-        lineY,
-        horizontalStartX: lineX,
-        horizontalEndX: lineX + BRANCH_LEN,
-        showVertical: true,
-        verticalX: lineX,
-        verticalFromY: lineY - verticalHeight,
-        verticalHeight,
-      };
-    }
-
-    // Обычная вставка после элемента
-    const fallbackLineX = getTrunkXForUl(ul);
-
-    return {
-      kind: "after-fallback",
-      dragId,
-      targetId,
-      parentId: targetInfo.parent ? targetInfo.parent.id : null,
-      insertMode: "after",
-      lineY: rowRect.bottom + (ul.dataset.level === "0" ? -2 : 1),
-      horizontalStartX: fallbackLineX,
-      horizontalEndX: fallbackLineX + BRANCH_LEN,
-      showVertical: false,
-      verticalX: 0,
-      verticalFromY: 0,
-      verticalHeight: 0,
-    };
+    return null;
   }
 
   function moveNodeByPreview(id, preview) {

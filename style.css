@@ -289,31 +289,7 @@ td.conflict{
   margin-right: 21px;
   margin-left: 21px;
 }
-/* контейнер тумблера */
-.mode-toggle{
-  display: inline-flex;
-  gap: 0;              /* без отступа */
-  margin-left: 21px;
-  margin-right: 21px; 
-}
 
-/* обе кнопки — как #tgToggle (как "Копировать") */
-.mode-toggle button{
-  height: 21px;
-  background: #f0f0f0;
-  cursor: pointer;
-  border: 1px solid grey;      
-  margin: 0;  /* на всякий */
-}
-
-.mode-toggle button.active{
-  color: #777;
-}
-
-/* чтобы не было "двойной" границы посередине */
-.mode-toggle button + button{
-  border-left: 0;
-}
 
 /* скругления: у левой убираем справа, у правой убираем слева */
 #modeStd{
@@ -531,7 +507,7 @@ td.conflict{
 
 .btnn.is-active {
   background-color: #dcdcdc;
-  color:var(--no-activ-color);
+  font-weight: bold;
 }
 
 .btnn:disabled {
@@ -652,21 +628,21 @@ td.conflict{
   grid-row: 2;
   min-width: 0;
   min-height: 0;
-  
+
   padding-top: 42px;
   padding-left: 63px;
   padding-right: 63px;
 
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .tree-scroll{
   width: 100%;
-  height: 100%;
+  height: auto;
   min-width: 0;
   min-height: 0;
-  overflow: auto;
+  overflow: visible;
 }
 
 .sidebar{
