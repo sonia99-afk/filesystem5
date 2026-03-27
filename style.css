@@ -46,6 +46,9 @@ body{ margin:0; font-family:Consolas,"Courier New",monospace; background:#fff; c
     ul[data-level="2"]{ --trunk-x: var(--trunk-dept); }
     ul[data-level="3"]{ --trunk-x: var(--trunk-role); }
     ul[data-level="4"]{ --trunk-x: var(--trunk-step); }
+    ul[data-level]:not([data-level="0"]):not([data-level="1"]):not([data-level="2"]):not([data-level="3"]):not([data-level="4"]){
+      --trunk-x: var(--trunk-step);
+    }
 
     .trunk{
       position:absolute;
@@ -242,7 +245,7 @@ kbd{
 
 
 td.editing{
-  background:#fff3cd;
+  background:#fff3cd !important;
   border:2px dashed #333;
 }
 
@@ -505,9 +508,14 @@ td.conflict{
   background-color: #cecece;
 }
 
-.btnn.is-active {
+.btnn.is-active,
+.formatblock .btnn.active{
   background-color: #dcdcdc;
   font-weight: bold;
+}
+
+#fmtBold.active{
+  font-weight: normal;
 }
 
 .btnn:disabled {
@@ -613,8 +621,6 @@ td.conflict{
   padding-top: 21px;
   padding-bottom: 21px;
   height: 84px;
-
-  grid-column: 2 / 4;
   grid-row: 1;
   display: flex;
   align-items: center;
@@ -647,12 +653,11 @@ td.conflict{
 
 .sidebar{
   grid-column: 3;
-  grid-row: 2;
+  grid-row: 1 / 3;
   border-left: 1px solid #989898;
-  padding-top: 42px;
+  padding-top: 75px;
   padding-left: 31px;
   padding-right: 31px;
-  box-sizing: border-box;
 }
 
 /* фиксируем высоту строки дерева */
@@ -682,18 +687,14 @@ li{
   min-height: 300px;
 }
 
-
-
-
-
-
-
-
-
 .projects-title{
   margin-bottom: 31px;
   color: #8d8d8d;
   line-height: 1.1;
+}
+
+body.left-collapsed .projects-title{
+  visibility: hidden;
 }
 
 .projects-list{
@@ -751,6 +752,11 @@ li{
   font-family: inherit;
   width: 100%;
   text-align: left;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 /* наведение */
@@ -781,3 +787,211 @@ body.hotkeys-edit-mode #tree li::before{
   border-top-color: var(--no-activ-color);
 }
 
+
+.main{
+  position: relative;
+  overflow: hidden;
+}
+
+.tree-scroll{
+  overflow: hidden;
+}
+
+.sidebar{
+  position: relative;
+  z-index: 2;
+  background: #fff;
+}
+
+.hotkeys,
+.hotkeys th,
+.hotkeys td{
+  background: #fff;
+}
+
+
+
+
+
+/* =========================
+   Collapsible side panels
+   ========================= */
+
+   :root{
+    --leftbar-open: 225px;
+    --leftbar-collapsed: 70px;
+  
+    --rightbar-open: 700px;
+    --rightbar-collapsed: 70px;
+  }
+  
+  /* плавное изменение сетки */
+  .grid-container{
+    transition: grid-template-columns 0.22s ease;
+  }
+  
+  /* базовые размеры через переменные */
+  .grid-container{
+    grid-template-columns:
+      var(--leftbar-open)
+      minmax(0, 1fr)
+      var(--rightbar-open);
+  }
+  
+  /* важно: позволяем ширине панели реально управляться grid-колонкой */
+  .leftbar{
+    width: auto;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .sidebar{
+    width: auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+  
+  /* ====== Toggle buttons (новый стиль) ====== */
+
+.toggle-left,
+.toggle-right{
+  position: absolute;
+  top: 10px;
+  z-index: 10;
+
+  width: 18px;
+
+  padding: 0;
+  border: 1px solid #757575;
+  border-radius: 2px;
+
+  background: none;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+}
+
+/* внутренняя полоска */
+.toggle-left::before,
+.toggle-right::before{
+  content: "";
+  width: 1px;
+  height: 12px;
+  background: #757575;
+}
+
+.toggle-left::before {
+  margin-left: 5px;
+}
+
+.toggle-right::before {
+  margin-left: 9px;
+}
+
+
+/* hover */
+.toggle-left:hover,
+.toggle-right:hover{
+  background: var(--hover-color);
+}
+
+/* активное состояние */
+.toggle-left:active,
+.toggle-right:active{
+  background: #dcdcdc;
+}
+
+/* позиционирование */
+.toggle-left{
+  right: 25px;
+  top: 31px;
+}
+
+.toggle-right{
+  left: 25px;
+  top: 31px;
+}
+  
+  /* -------------------------
+     LEFT collapsed
+     ------------------------- */
+  
+  body.left-collapsed .grid-container{
+    grid-template-columns:
+      var(--leftbar-collapsed)
+      minmax(0, 1fr)
+      var(--rightbar-open);
+  }
+  
+  body.left-collapsed .leftbar{
+    padding-right: 10px;
+    padding-left: 10px;
+    padding-top: 31px;
+    /* overflow: hidden; */
+  }
+  
+  body.left-collapsed .leftbar > *:not(.toggle-left){
+    /* visibility: hidden; */
+    pointer-events: none;
+  }
+  
+  /* -------------------------
+     RIGHT collapsed
+     ------------------------- */
+  
+  body.right-collapsed .grid-container{
+    grid-template-columns:
+      var(--leftbar-open)
+      minmax(0, 1fr)
+      var(--rightbar-collapsed);
+  }
+  
+  body.right-collapsed .sidebar{
+    padding-left: 0;
+    padding-right: 0;
+    overflow: hidden;
+  }
+  
+  body.right-collapsed .sidebar > *:not(.toggle-right){
+    visibility: hidden;
+    pointer-events: none;
+  }
+  
+
+  
+  /* -------------------------
+     BOTH collapsed
+     ------------------------- */
+  
+  body.left-collapsed.right-collapsed .grid-container{
+    grid-template-columns:
+      var(--leftbar-collapsed)
+      minmax(0, 1fr)
+      var(--rightbar-collapsed);
+  }
+
+
+  .captions{
+    /* margin-top: 6px;
+    margin-bottom: 6px; */
+  }
+  
+  .caption{
+    color: #4d4d4d;
+    font-size: 12px;
+    line-height: 1.3;
+    white-space: pre-wrap;
+    cursor: text;
+  }
+  
+  .caption + .caption{
+    margin-top: -0.3em;
+  }
+  
+  .edit-caption{
+    height: auto !important;
+  min-height: 1.3em;
+  white-space: pre-wrap;
+  }

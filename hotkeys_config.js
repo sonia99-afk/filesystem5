@@ -52,7 +52,7 @@
     // Прочее
     rename: "Ё",
     renameClick: "DblClick",
-    delete: "Backspace",
+    delete: "Shift+Backspace",
     deleteClick: "",
 
     // Undo/Redo
@@ -60,7 +60,9 @@
     redo: "Primary+Shift+Z",
 
     undoClick: "",
-    redoClick: ""
+    redoClick: "",
+
+    addCaption: "Primary+Enter"
   };
 
   // Display label for Primary in UI

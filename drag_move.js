@@ -32,6 +32,9 @@
       const li = liOfRow(row);
       if (!ul || !li) continue;
 
+      const liRect = li.getBoundingClientRect();
+      const blockBottom = liRect.bottom;
+
       const rowsInLevel = getDirectChildRows(ul);
       const rowIdx = rowsInLevel.indexOf(row);
       const nextSameLevelRow =
@@ -59,32 +62,36 @@
 
       const normalBottom = rect.bottom;
 
-      // По умолчанию жёлтая зона равна высоте самой строки.
-      let sameLevelBottom = normalBottom;
+      // По умолчанию жёлтая зона равна низу всего блока li,
+      // чтобы учитывать подписи.
+      let sameLevelBottom = blockBottom;
 
-      // По умолчанию рыжая зона тоже равна высоте самой строки.
+      // По умолчанию рыжая зона остаётся в пределах самой строки.
       let childBottom = normalBottom;
 
       // Если есть дети и есть следующий сосед того же уровня,
-      // тянем жёлтую зону до следующего соседа.
+      // тянем жёлтую зону до следующего соседа, но не выше низа блока.
       if (hasChildren && nextSameLevelRow) {
-        sameLevelBottom = nextSameLevelRow.getBoundingClientRect().top;
+        const nextTop = nextSameLevelRow.getBoundingClientRect().top;
+        sameLevelBottom = Math.max(blockBottom, Math.min(blockBottom, nextTop));
       }
       // Если есть дети, нет следующего соседа на этом уровне,
       // и это НЕ самый последний блок дерева,
-      // тянем жёлтую зону до конца видимого поддерева.
+      // тянем жёлтую зону до конца видимого поддерева,
+      // но не выше низа самого блока.
       else if (hasChildren && !nextSameLevelRow && !isLastVisibleRow) {
         const lastSubtreeRow = getLastVisibleRowInSubtree(li);
         const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
-        sameLevelBottom = lastRect.bottom;
+        sameLevelBottom = Math.max(blockBottom, lastRect.bottom);
       }
       // Если это самый последний блок дерева,
       // даём дополнительную зону ниже и для жёлтой, и для рыжей области.
       else if (isLastVisibleRow) {
         const lastSubtreeRow = getLastVisibleRowInSubtree(li);
         const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
-        sameLevelBottom = lastRect.bottom + LAST_BLOCK_EXTRA_DROP_ZONE_PX;
-        childBottom = lastRect.bottom + LAST_BLOCK_EXTRA_DROP_ZONE_PX;
+        const baseBottom = Math.max(blockBottom, lastRect.bottom);
+        sameLevelBottom = baseBottom + LAST_BLOCK_EXTRA_DROP_ZONE_PX;
+        childBottom = baseBottom + LAST_BLOCK_EXTRA_DROP_ZONE_PX;
       }
 
       const inSameLevelX = x >= sameLevelStartX && x <= sameLevelEndX;
@@ -100,6 +107,16 @@
     }
 
     return null;
+  }
+
+  function adjustLineYForCaptions(li, lineY) {
+    const captions = li.querySelector(":scope > .captions");
+    if (!captions) return lineY;
+
+    const rect = captions.getBoundingClientRect();
+    if (!rect.height) return lineY;
+
+    return Math.max(lineY, rect.bottom);
   }
 
   function liOfRow(row) {
@@ -314,6 +331,9 @@
 
     if (!ul || !li) return null;
 
+    const liRect = li.getBoundingClientRect();
+    const blockBottom = liRect.bottom;
+
     const rowsInLevel = getDirectChildRows(ul);
     const rowIdx = rowsInLevel.indexOf(row);
     const isLast = rowIdx === rowsInLevel.length - 1;
@@ -357,7 +377,9 @@
     if (wantChild && !hasChildren) {
       const firstLetterEndX = rowRect.left + 8;
       const isRootLevel = ul.dataset.level === "0";
-      const lineY = rowRect.bottom + (isRootLevel ? -1 : 2);
+      let lineY = rowRect.bottom + (isRootLevel ? -1 : 2);
+      lineY = adjustLineYForCaptions(li, lineY);
+
       const verticalHeight = Math.max(4, rowRect.height / 4);
 
       return {
@@ -387,13 +409,16 @@
       const childTrunkX = getTrunkXForUl(childUl);
       const firstChildRect = firstChildRow.getBoundingClientRect();
 
+      let lineY = (rowRect.bottom + firstChildRect.top) / 2;
+      lineY = adjustLineYForCaptions(li, lineY);
+
       return {
         kind: "first-in-existing-child-level",
         dragId,
         targetId,
         parentId: targetId,
         insertMode: "into-first",
-        lineY: (rowRect.bottom + firstChildRect.top) / 2,
+        lineY,
         horizontalStartX: childTrunkX,
         horizontalEndX: childTrunkX + BRANCH_LEN,
         showVertical: false,
@@ -407,36 +432,38 @@
     if (inSameLevelZoneX) {
       const lineX = getTrunkXForUl(ul);
 
-      let lineY = rowRect.bottom;
+      let lineY = blockBottom;
       let showVertical = false;
       let verticalFromY = 0;
       let verticalHeight = 0;
 
       if (hasChildren && nextSameLevelRow) {
-        lineY = nextSameLevelRow.getBoundingClientRect().top;
+        const nextTop = nextSameLevelRow.getBoundingClientRect().top;
+        lineY = Math.min(blockBottom, nextTop);
       } else if (hasChildren && !nextSameLevelRow && !isLastVisibleRow) {
         const lastSubtreeRow = getLastVisibleRowInSubtree(li);
         const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
 
-        lineY = lastRect.bottom;
+        lineY = Math.max(blockBottom, lastRect.bottom);
         showVertical = true;
         verticalFromY = rowRect.top + rowRect.height / 2;
         verticalHeight = Math.max(4, lineY - verticalFromY);
       } else if (isLastVisibleRow) {
         const lastSubtreeRow = getLastVisibleRowInSubtree(li);
         const lastRect = (lastSubtreeRow || row).getBoundingClientRect();
-      
-        // Зона в rowFromEvent уже расширена на +100px,
-        // но саму серую линию в жёлтой зоне вниз не тянем.
-        lineY = lastRect.bottom;
+
+        lineY = Math.max(blockBottom, lastRect.bottom);
         showVertical = true;
         verticalFromY = rowRect.top + rowRect.height / 2;
         verticalHeight = Math.max(4, lineY - verticalFromY);
       } else if (isLast) {
         showVertical = true;
-        verticalHeight = Math.max(6, rowRect.height / 2);
-        verticalFromY = lineY - verticalHeight;
+        lineY = blockBottom;
+        verticalFromY = rowRect.top + rowRect.height / 2;
+        verticalHeight = Math.max(6, lineY - verticalFromY);
       }
+
+      lineY = adjustLineYForCaptions(li, lineY);
 
       return {
         kind:

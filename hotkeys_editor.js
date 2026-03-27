@@ -289,12 +289,12 @@
           return;
         }
 
-        if (e.key === "Tab") {
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-          return;
-        }
+        // if (e.key === "Tab") {
+        //   e.preventDefault();
+        //   e.stopPropagation();
+        //   if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        //   return;
+        // }
 
         if (isMouseAction) {
           e.preventDefault();

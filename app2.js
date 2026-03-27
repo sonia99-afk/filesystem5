@@ -1,13 +1,51 @@
-const LEVEL = { COMPANY: 0, PROJECT: 1, DEPT: 2, ROLE: 3, STEP: 4 };
-const DEFAULT_NAME = { 0: 'Проект', 1: 'Процесс', 2: 'Блок задач', 3: 'Задача', 4: 'Шаг' };
+const LEVEL = { COMPANY: 0, PROJECT: 1, DEPT: 2, ROLE: 3, STEP: 20 };
+
+const DEFAULT_NAME = {
+  0: 'Уровень 0',
+  1: 'Уровень 1',
+  2: 'Уровень 2',
+  3: 'Уровень 3',
+  4: 'Уровень 4',
+  5: 'Уровень 5',
+  6: 'Уровень 6',
+  7: 'Уровень 7',
+  8: 'Уровень 8',
+  9: 'Уровень 9',
+  10: 'Уровень 10',
+  11: 'Уровень 11',
+  12: 'Уровень 12',
+  13: 'Уровень 13',
+  14: 'Уровень 14',
+  15: 'Уровень 15',
+  16: 'Уровень 16',
+  17: 'Уровень 17',
+  18: 'Уровень 18',
+  19: 'Уровень 19',
+  20: 'Уровень 20',
+};
 
 const uid = () => Math.random().toString(36).slice(2, 9) + '_' + Date.now().toString(36);
 
 function makeNode(level, name) {
-  return { id: uid(), level, name: (name || DEFAULT_NAME[level]), children: [] };
+  return {
+    id: uid(),
+    level,
+    name: (name || DEFAULT_NAME[level]),
+    nameHtml: "",
+    captions: [],
+    children: []
+  };
 }
 
-const root = makeNode(LEVEL.COMPANY, 'Проект');
+function makeCaption(text = "") {
+  return {
+    id: uid(),
+    text,
+    textHtml: ""
+  };
+}
+
+const root = makeNode(LEVEL.COMPANY, 'Уровень 0');
 let selectedId = root.id;
 let treeHasFocus = true;
 
@@ -28,21 +66,27 @@ function snapshot() {
 function restore(state) {
   const data = JSON.parse(state);
 
-  // restore root in-place (keep reference)
+  window.__suppressCaptionBlurCommit = true;
+
   root.id = data.root.id;
   root.level = data.root.level;
   root.name = data.root.name;
+  root.nameHtml = data.root.nameHtml || "";
+  root.captions = data.root.captions || [];
   root.children = data.root.children || [];
 
   selectedId = data.selectedId || root.id;
   treeHasFocus = (typeof data.treeHasFocus === 'boolean') ? data.treeHasFocus : true;
 
-  // if selectedId no longer exists -> fallback to root
   if (!findWithParent(root, selectedId)) selectedId = root.id;
 
   renamingId = null;
 
   render();
+
+  queueMicrotask(() => {
+    window.__suppressCaptionBlurCommit = false;
+  });
 }
 
 function pushHistory() {
@@ -280,6 +324,29 @@ function addChild(parentId) {
   treeHasFocus = true;
   render();
   setTimeout(() => startRename(child.id), 0);
+}
+
+function addCaption(nodeId) {
+  const r = findWithParent(root, nodeId);
+  if (!r) return;
+
+  pushHistory();
+
+  if (!Array.isArray(r.node.captions)) r.node.captions = [];
+
+  const cap = {
+    id: uid(),
+    text: "",
+    textHtml: ""
+  };
+
+  r.node.captions.push(cap);
+
+  selectedId = nodeId;
+  treeHasFocus = true;
+  render();
+
+  setTimeout(() => startCaptionEdit(nodeId, cap.id, { isNew: true }), 0);
 }
 
 function addSibling(targetId) {
@@ -694,7 +761,6 @@ function renderNode(n) {
   } else {
     const lock = document.createElement('span');
     lock.className = 'mut';
-    lock.textContent = ' (корень)';
     lock.style.marginLeft = '6px';
     act.appendChild(lock);
   }
@@ -809,9 +875,41 @@ function renderNode(n) {
       addSibling(n.id);
       return;
     }
+
+    if (isHotkey(e, "addCaption")) {
+      e.preventDefault();
+      addCaption(selectedId);
+      return;
+    }
   });
 
   li.appendChild(row);
+
+  if (Array.isArray(n.captions) && n.captions.length) {
+    const caps = document.createElement("div");
+    caps.className = "captions";
+  
+    for (const c of n.captions) {
+      const cap = document.createElement("div");
+      cap.className = "caption";
+      cap.dataset.nodeId = n.id;
+      cap.dataset.captionId = c.id;
+  
+      if (c.textHtml) cap.innerHTML = c.textHtml;
+      else cap.textContent = c.text || "";
+  
+      cap.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        selectedId = n.id;
+        treeHasFocus = true;
+        startCaptionEdit(n.id, c.id);
+      });
+  
+      caps.appendChild(cap);
+    }
+  
+    li.appendChild(caps);
+  }
 
   if (n.children && n.children.length) {
     const ul = document.createElement('ul');
@@ -827,8 +925,11 @@ function renderNode(n) {
 
 function layoutTrunks() {
   const uls = document.querySelectorAll('ul[data-level]');
+
+  // 1) Вертикальные trunk-линии внутри каждого списка уровня
   for (const ul of uls) {
     ul.querySelectorAll(':scope > .trunk').forEach(el => el.remove());
+
     const lvl = ul.dataset.level;
     if (lvl === '0') continue;
 
@@ -853,9 +954,11 @@ function layoutTrunks() {
     ul.prepend(trunk);
   }
 
+  // 2) Вертикальные plink-линии от родителя к блоку детей
   document.querySelectorAll('.plink').forEach(el => el.remove());
 
   const lis = document.querySelectorAll('li');
+
   for (const li of lis) {
     const childUl = li.querySelector(':scope > ul[data-level]');
     if (!childUl) continue;
@@ -879,19 +982,35 @@ function layoutTrunks() {
     const shift = parseFloat(cs.getPropertyValue('--trunk-shift')) || 0;
     const x = (ulBox.left - liBox.left) + trunkX + shift;
 
-    const y1 = (pBox.top - liBox.top);
-    const y2 = (cBox.top - liBox.top);
+    // Стандартная точка начала линии: чуть ниже строки родителя
+    const parentStartY = (pBox.top - liBox.top) + 12;
+
+    // Если у узла есть подписи, линия к детям должна начинаться ниже них
+    const caps = li.querySelector(':scope > .captions');
+    let startY = parentStartY;
+
+    if (caps) {
+      const capsBox = caps.getBoundingClientRect();
+      const capsBottomY = capsBox.bottom - liBox.top;
+
+      // Берём наиболее нижнюю точку:
+      // либо обычное начало от row, либо низ блока подписей
+      startY = Math.max(parentStartY, capsBottomY);
+    }
+
+    // Конец линии — у первого дочернего anchor
+    const endY = cBox.top - liBox.top;
 
     const plink = document.createElement('div');
     plink.className = 'plink';
     plink.style.left = x + 'px';
 
-    if (y2 >= y1) {
-      plink.style.top = (y1 + 12) + 'px';
-      plink.style.height = Math.max(0, y2 - y1 - 12) + 'px';
+    if (endY >= startY) {
+      plink.style.top = startY + 'px';
+      plink.style.height = Math.max(0, endY - startY) + 'px';
     } else {
-      plink.style.top = (y2 + 12) + 'px';
-      plink.style.height = Math.max(0, y1 - y2 - 12) + 'px';
+      plink.style.top = endY + 'px';
+      plink.style.height = Math.max(0, startY - endY) + 'px';
     }
 
     li.prepend(plink);
@@ -913,7 +1032,11 @@ window.addEventListener('keydown', (e) => {
 
   const active = document.activeElement;
   const isRow = active && active.classList && active.classList.contains('row');
-  const isEditing = active && active.tagName === 'INPUT' && active.classList && active.classList.contains('edit');
+  const isEditing =
+    active &&
+    active.classList &&
+    active.classList.contains('edit') &&
+    (active.tagName === 'INPUT' || active.isContentEditable);
 
   if (isRow || isEditing) return;
   if (!treeHasFocus) return;

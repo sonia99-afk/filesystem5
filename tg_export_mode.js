@@ -1,17 +1,15 @@
 // tg_export_mode.js
 // Режим Telegram: экспорт ASCII + ручное редактирование + импорт обратно в дерево.
-// ВАЖНО: root из app.js не в window, но он в общем scope, его можно мутировать in-place.
+// Подписи экспортируются БЕЗ "-" и при импорте возвращаются в node.captions.
 
 (function () {
   let tgMode = false;
   let lastAscii = '';
+
   function getCopyBtn() {
     return document.getElementById('tgCopy');
   }
 
-    // Всегда копируем АКТУАЛЬНОЕ состояние:
-  // - если мы в tgMode и есть textarea, копируем её (пользователь мог внести правки, но ещё не сохранить)
-  // - иначе пересобираем ASCII из текущего DOM-дерева
   function getCurrentCopyText() {
     if (tgMode) {
       const ta = document.querySelector('textarea.tg-export');
@@ -26,10 +24,7 @@
     const copyBtn = getCopyBtn();
     if (!copyBtn || copyBtn.__tgCopyInstalled) return;
     copyBtn.__tgCopyInstalled = true;
-  
-    let revertTimer = null;
-    const baseText = copyBtn.textContent; // запомним один раз
-  
+
     copyBtn.onclick = async () => {
       try {
         const text = getCurrentCopyText();
@@ -47,6 +42,12 @@
     return (clone.textContent || '').trim();
   }
 
+  function getCaptionText(capEl) {
+    return (capEl.textContent || '')
+      .replace(/\r/g, '')
+      .trim();
+  }
+
   function buildTreeFromDom() {
     const host = document.getElementById('tree');
     if (!host) return null;
@@ -58,7 +59,20 @@
       const row = li.querySelector(':scope > .row');
       if (!row) return null;
 
-      const node = { label: getNodeLabelFromRow(row), children: [] };
+      const node = {
+        label: getNodeLabelFromRow(row),
+        captions: [],
+        children: []
+      };
+
+      const caps = li.querySelector(':scope > .captions');
+      if (caps) {
+        const capEls = Array.from(caps.querySelectorAll(':scope > .caption'));
+        for (const capEl of capEls) {
+          const txt = getCaptionText(capEl);
+          if (txt) node.captions.push(txt);
+        }
+      }
 
       const childUl = li.querySelector(':scope > ul');
       if (childUl) {
@@ -68,6 +82,7 @@
           if (chNode) node.children.push(chNode);
         }
       }
+
       return node;
     }
 
@@ -78,21 +93,31 @@
   }
 
   function dashByLevel(level) {
-    switch (level) {
-      case 1: return '- ';
-      case 2: return '- - ';
-      case 3: return '- - - ';
-      case 4: return '- - - - ';
-      default: return '';
-    }
+    if (level <= 0) return '';
+    return Array(level).fill('-').join(' ') + ' ';
   }
 
   function asciiFromTree(tree) {
     const lines = [];
+  
     function rec(node, depth) {
       lines.push(dashByLevel(depth) + node.label);
+  
+      const caps = node.captions || [];
+      for (const cap of caps) {
+        const parts = String(cap || '')
+          .replace(/\r/g, '')
+          .split('\n');
+  
+        parts.forEach((part, index) => {
+          if (index === 0) lines.push('* ' + part);
+          else lines.push(part);
+        });
+      }
+  
       (node.children || []).forEach(ch => rec(ch, depth + 1));
     }
+  
     rec(tree, 0);
     return '```\n' + lines.join('\n') + '\n```';
   }
@@ -109,87 +134,152 @@
     const clean = stripCodeFences(text);
   
     const lines = clean
-      .split("\n")
-      .map(l => l.trim())
-      .filter(Boolean);
+      .split('\n')
+      .map(l => l.replace(/\r/g, '').trimEnd());
   
     const stack = [];
     let newRoot = null;
+    let lastNode = null;
   
-    for (const line of lines) {
-      const m = line.match(/^((?:-\s*)*)\s*(.+)$/);
-      if (!m) continue;
+    let captionBuffer = null;
   
-      // считаем количество '-' в префиксе (пробелы игнорируем)
-      const level = (m[1].match(/-/g) || []).length;
-  
-      const name = (m[2] || "").trim();
-      if (!name) continue;
-  
-      // Приводим уровень к 0..3
-      const desiredLevel = Math.max(0, Math.min(4, level));
-  
-      const node = {
+    function makeParsedNode(level, name) {
+      return {
         id: Math.random().toString(36).slice(2),
-        level: desiredLevel,
+        level,
         name,
+        nameHtml: "",
+        captions: [],
         children: []
       };
+    }
   
-      if (node.level === 0) {
-        // ✅ Разрешаем только ОДИН root (первую строку без '-')
-        if (newRoot) continue;
+    function flushCaptionBuffer() {
+      if (!lastNode || !captionBuffer) {
+        captionBuffer = null;
+        return;
+      }
   
-        newRoot = node;
-        stack.length = 0;
-        stack.push(node);
+      const text = captionBuffer.join('\n').trim();
+      captionBuffer = null;
+  
+      if (!text) return;
+  
+      if (!Array.isArray(lastNode.captions)) lastNode.captions = [];
+      lastNode.captions.push({
+        id: Math.random().toString(36).slice(2),
+        text,
+        textHtml: ""
+      });
+    }
+  
+    for (const rawLine of lines) {
+      const line = rawLine.trimEnd();
+      const trimmed = line.trim();
+  
+      if (!trimmed) {
+        if (captionBuffer) {
+          captionBuffer.push('');
+        }
         continue;
       }
   
-      // 1) если ушли "вверх" — попаем до нужного уровня родителя
-      // stack.length = depth+1, а node.level = depth
-      while (stack.length > node.level) stack.pop();
+      // первая строка без "-" и без "*" = root
+      if (!newRoot && !/^\s*-/.test(line) && !/^\s*\*/.test(line)) {
+        flushCaptionBuffer();
   
-      // 2) если пропущены уровни — достраиваем плейсхолдерами
-      // Пример: встретили level=2 (Отдел), а в стеке только root -> добавим Проект
-      while (stack.length < node.level) {
-        const placeholderLevel = stack.length; // 1, 2, ...
-        const placeholder = {
-          id: Math.random().toString(36).slice(2),
-          level: placeholderLevel,
-          name:
-            (typeof DEFAULT_NAME !== "undefined" && DEFAULT_NAME[placeholderLevel])
-              ? DEFAULT_NAME[placeholderLevel]
-              : (placeholderLevel === 1 ? "Проект" : placeholderLevel === 2 ? "Процесс" : placeholderLevel === 2 ? "Блок задач" : "Шаг"),
-          children: []
-        };
+        const rootName = trimmed;
+        if (!rootName) continue;
   
-        const p = stack[stack.length - 1];
-        if (!p) break;
-        p.children.push(placeholder);
-        stack.push(placeholder);
+        const rootNode = makeParsedNode(0, rootName);
+        newRoot = rootNode;
+        stack.length = 0;
+        stack.push(rootNode);
+        lastNode = rootNode;
+        continue;
       }
   
-      // 3) теперь родитель гарантированно есть
-      const parent = stack[stack.length - 1];
-      if (!parent) continue;
+      // новая подпись
+      const captionMatch = line.match(/^\s*\*\s?(.*)$/);
+      if (captionMatch) {
+        flushCaptionBuffer();
   
-      parent.children.push(node);
-      stack.push(node);
+        if (!lastNode) continue;
+        captionBuffer = [captionMatch[1] || ''];
+        continue;
+      }
+  
+      // обычный узел
+      const nodeMatch = line.match(/^((?:-\s*)+)\s*(.+)$/);
+      if (nodeMatch) {
+        flushCaptionBuffer();
+  
+        const level = (nodeMatch[1].match(/-/g) || []).length;
+        const name = (nodeMatch[2] || '').trim();
+        if (!name) continue;
+  
+        const desiredLevel = Math.max(1, Math.min(LEVEL.STEP, level));
+        const node = makeParsedNode(desiredLevel, name);
+  
+        if (!newRoot) {
+          const rootNode = makeParsedNode(0, DEFAULT_NAME?.[0] || 'Уровень 0');
+          newRoot = rootNode;
+          stack.length = 0;
+          stack.push(rootNode);
+          lastNode = rootNode;
+        }
+  
+        while (stack.length > node.level) stack.pop();
+  
+        while (stack.length < node.level) {
+          const placeholderLevel = stack.length;
+          const placeholder = makeParsedNode(
+            placeholderLevel,
+            (typeof DEFAULT_NAME !== "undefined" && DEFAULT_NAME[placeholderLevel] != null)
+              ? DEFAULT_NAME[placeholderLevel]
+              : `Уровень ${placeholderLevel}`
+          );
+  
+          const p = stack[stack.length - 1];
+          if (!p) break;
+          p.children.push(placeholder);
+          stack.push(placeholder);
+        }
+  
+        const parent = stack[stack.length - 1];
+        if (!parent) continue;
+  
+        parent.children.push(node);
+        stack.push(node);
+        lastNode = node;
+        continue;
+      }
+  
+      // продолжение текущей подписи
+      if (captionBuffer) {
+        captionBuffer.push(trimmed);
+        continue;
+      }
+  
+      // если это просто строка без префиксов после узла, считаем началом подписи
+      if (lastNode) {
+        captionBuffer = [trimmed];
+      }
     }
+  
+    flushCaptionBuffer();
   
     return newRoot;
   }
 
   function renderTelegramView() {
-    
     const host = document.getElementById('tree');
     if (!host) return;
 
     const copyBtn = getCopyBtn();
-      if (copyBtn) {
-        copyBtn.style.display = 'inline-block';
-      }
+    if (copyBtn) {
+      copyBtn.style.display = 'inline-block';
+    }
 
     const tree = buildTreeFromDom();
     lastAscii = tree ? asciiFromTree(tree) : '```\n(дерево не найдено)\n```';
@@ -203,51 +293,47 @@
     backBtn.textContent = 'Сохранить';
     backBtn.className = 'btnn';
 
-    
-
     const ta = document.createElement('textarea');
-
-
     ta.className = 'tg-export';
     ta.value = lastAscii;
 
+    const stop = (e) => e.stopPropagation();
 
-        // чтобы события из tg-UI не долетали до обработчика #tree.click в app.js
-        const stop = (e) => e.stopPropagation();
+    bar.addEventListener('pointerdown', stop);
+    bar.addEventListener('mousedown', stop);
+    bar.addEventListener('click', stop);
 
-        bar.addEventListener('pointerdown', stop);
-        bar.addEventListener('mousedown', stop);
-        bar.addEventListener('click', stop);
-    
-        ta.addEventListener('pointerdown', stop);
-        ta.addEventListener('mousedown', stop);
-        ta.addEventListener('click', stop);
+    ta.addEventListener('pointerdown', stop);
+    ta.addEventListener('mousedown', stop);
+    ta.addEventListener('click', stop);
 
     backBtn.onclick = () => {
       const newTree = treeFromAscii(ta.value);
-  if (!newTree) {
-    alert('Не удалось распознать дерево. Проверь формат.');
-    return;
-  }
+      if (!newTree) {
+        alert('Не удалось распознать дерево. Проверь формат.');
+        return;
+      }
 
-  if (typeof pushHistory === "function") pushHistory();
+      if (typeof pushHistory === "function") pushHistory();
 
-  // мутируем root in-place
-  root.id = newTree.id;
-  root.level = newTree.level;
-  root.name = newTree.name;
-  root.children = newTree.children;
+      root.id = newTree.id;
+      root.level = newTree.level;
+      root.name = newTree.name;
+      root.nameHtml = newTree.nameHtml || "";
+      root.captions = newTree.captions || [];
+      root.children = newTree.children || [];
 
-  selectedId = root.id;
-      
+      selectedId = root.id;
+      treeHasFocus = true;
+
+      if (typeof render === 'function') render();
     };
-    
 
     bar.append(backBtn);
 
-host.append(ta);   // сначала textarea
-bar.style.marginTop = '16px';
-host.append(bar); 
+    host.append(ta);
+    bar.style.marginTop = '16px';
+    host.append(bar);
   }
 
   function patchRender() {
@@ -258,8 +344,8 @@ host.append(bar);
 
     function patchedRender() {
       if (tgMode) {
-        _render();           // чтобы DOM дерева был актуален
-        renderTelegramView(); // потом заменяем на textarea
+        _render();
+        renderTelegramView();
       } else {
         _render();
       }
@@ -272,40 +358,29 @@ host.append(bar);
   }
 
   function updateToggleBtn() {
-    // ✅ Новый тумблер из двух кнопок
     const std = document.getElementById('modeStd');
     const txt = document.getElementById('modeText');
-  
+
     if (std && txt) {
       std.classList.toggle('is-active', !tgMode);
       txt.classList.toggle('is-active', tgMode);
-  
       return;
     }
-  
-    // ✅ Фолбэк: старая одиночная кнопка (если вдруг осталась)
+
     const b = document.getElementById('tgToggle');
     if (!b) return;
     b.textContent = tgMode ? 'Стандартный режим' : 'Текстовый режим';
   }
-
-  window.toggleTelegramMode = function () {
-    tgMode = !tgMode;
-    updateToggleBtn();
-    window.render();
-  };
 
   window.setTelegramMode = function (on) {
     tgMode = !!on;
     updateToggleBtn();
     window.render();
   };
-  
-  // backward-compatible: если где-то ещё дергается toggleTelegramMode()
+
   window.toggleTelegramMode = function () {
     window.setTelegramMode(!tgMode);
   };
-
 
   function installTelegramEventTrap() {
     const host = document.getElementById('tree');
@@ -321,20 +396,14 @@ host.append(bar);
       if (!tgMode) return;
       if (!isTextareaTarget(e)) return;
 
-      // важно: не preventDefault — чтобы ввод/курсор работали
-      // но не даём событию долететь до обработчиков app.js
       e.stopPropagation();
       e.stopImmediatePropagation();
     }
 
-    // Трапим ТОЛЬКО клавиатуру (стрелки/Del/Enter и т.п.)
     host.addEventListener('keydown', trapKey, true);
   }
 
-  
-  
-installTelegramEventTrap();
-installCopyHandler();
-patchRender();
-
+  installTelegramEventTrap();
+  installCopyHandler();
+  patchRender();
 })();
