@@ -6,7 +6,7 @@
 // Подсветка: голубым
 //
 // API:
-// window.multiSelect = { getIds, clear, has, size, debug }
+// window.multiSelect = { getIds, clear, has, size, debug, handleRangeKey }
 
 (function () {
   if (typeof window === "undefined") return;
@@ -368,6 +368,7 @@
         ids: Array.from(state.ids),
       };
     },
+    handleRangeKey
   };
 
   window.addEventListener(

@@ -4,7 +4,7 @@
   const REPEAT_MS = 60;
 
   let heldCode = null;     // ArrowUp/Down/Left/Right
-  let heldAction = null;   // navUp/navDown/navLeft/navRight/moveUp/moveDown/indent/outdent
+  let heldAction = null;   // navUp/navDown/navLeft/navRight/moveUp/moveDown/indent/outdent/rangeUp/rangeDown/deepUp/deepDown
   let tStart = null;
   let tRepeat = null;
 
@@ -31,8 +31,20 @@
   function step(action) {
     if (!canRunNow()) return;
 
-    // Эти функции — из app.js (глобальные)
     switch (action) {
+      case "rangeUp":
+        return window.multiSelect?.handleRangeKey?.(-1);
+
+      case "rangeDown":
+        return window.multiSelect?.handleRangeKey?.(+1);
+
+      case "deepUp":
+        return window.multiSelectDeep?.handleDeepRangeKey?.(-1);
+
+      case "deepDown":
+        return window.multiSelectDeep?.handleDeepRangeKey?.(+1);
+
+      // Эти функции — из app.js (глобальные)
       case "navUp":    return (typeof moveSelection === "function") ? moveSelection(-1) : undefined;
       case "navDown":  return (typeof moveSelection === "function") ? moveSelection(+1) : undefined;
       case "navLeft":  return (typeof goParent === "function") ? goParent(selectedId) : undefined;
@@ -73,16 +85,21 @@
     // На всякий случай: в режиме редактирования хоткеев не вмешиваемся
     if (window.hotkeysMode === "custom") return null;
 
-    // Проверяем ТОЛЬКО то, что умеем повторять напрямую (app.js).
-    // Порядок важен: более “специфичные” над “простыми”.
-    if (isHotkey(e, "indent"))  return "indent";
-    if (isHotkey(e, "outdent")) return "outdent";
-    if (isHotkey(e, "moveUp"))  return "moveUp";
-    if (isHotkey(e, "moveDown"))return "moveDown";
-    if (isHotkey(e, "navLeft")) return "navLeft";
-    if (isHotkey(e, "navRight"))return "navRight";
-    if (isHotkey(e, "navUp"))   return "navUp";
-    if (isHotkey(e, "navDown")) return "navDown";
+    // Порядок важен: сначала более специфичные мультивыделения,
+    // потом обычная навигация/перемещение.
+    if (isHotkey(e, "rangeUp"))   return "rangeUp";
+    if (isHotkey(e, "rangeDown")) return "rangeDown";
+    if (isHotkey(e, "deepUp"))    return "deepUp";
+    if (isHotkey(e, "deepDown"))  return "deepDown";
+
+    if (isHotkey(e, "indent"))    return "indent";
+    if (isHotkey(e, "outdent"))   return "outdent";
+    if (isHotkey(e, "moveUp"))    return "moveUp";
+    if (isHotkey(e, "moveDown"))  return "moveDown";
+    if (isHotkey(e, "navLeft"))   return "navLeft";
+    if (isHotkey(e, "navRight"))  return "navRight";
+    if (isHotkey(e, "navUp"))     return "navUp";
+    if (isHotkey(e, "navDown"))   return "navDown";
 
     return null;
   }

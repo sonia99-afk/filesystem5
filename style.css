@@ -511,7 +511,7 @@ td.conflict{
 .btnn.is-active,
 .formatblock .btnn.active{
   background-color: #dcdcdc;
-  font-weight: bold;
+  text-shadow: 0.5px 0 0 currentColor;
 }
 
 #fmtBold.active{
@@ -532,6 +532,10 @@ td.conflict{
 
 .formatblock > .btnn{
   margin-right: -8px;
+}
+
+.formatblock > .btnn:nth-child(4){
+  margin-right: 21px;
 }
 
 .addmarginsave {
@@ -640,6 +644,9 @@ td.conflict{
   padding-right: 63px;
 
   box-sizing: border-box;
+  
+
+  position: relative;
   overflow: auto;
 }
 
@@ -788,14 +795,14 @@ body.hotkeys-edit-mode #tree li::before{
 }
 
 
-.main{
+/* .main{
   position: relative;
   overflow: hidden;
-}
+} */
 
-.tree-scroll{
+/* .tree-scroll{
   overflow: hidden;
-}
+} */
 
 .sidebar{
   position: relative;
@@ -843,13 +850,11 @@ body.hotkeys-edit-mode #tree li::before{
     width: auto;
     min-width: 0;
     position: relative;
-    overflow: hidden;
   }
   
   .sidebar{
     width: auto;
     min-width: 0;
-    overflow: hidden;
   }
   
   /* ====== Toggle buttons (новый стиль) ====== */
@@ -860,34 +865,26 @@ body.hotkeys-edit-mode #tree li::before{
   top: 10px;
   z-index: 10;
 
-  width: 18px;
+  width: 22px;
+  height: 21px;
+  border-radius: 4px;
+  border: none;
 
   padding: 0;
-  border: 1px solid #757575;
-  border-radius: 2px;
 
   background: none;
   cursor: pointer;
 
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
-/* внутренняя полоска */
-.toggle-left::before,
-.toggle-right::before{
-  content: "";
-  width: 1px;
-  height: 12px;
-  background: #757575;
-}
-
-.toggle-left::before {
-  margin-left: 5px;
-}
-
-.toggle-right::before {
-  margin-left: 9px;
+.iconsize {
+    width: 14px;
+    height: 14px;
+    object-fit: contain;
+    display: block;
 }
 
 
@@ -971,12 +968,6 @@ body.hotkeys-edit-mode #tree li::before{
       minmax(0, 1fr)
       var(--rightbar-collapsed);
   }
-
-
-  .captions{
-    /* margin-top: 6px;
-    margin-bottom: 6px; */
-  }
   
   .caption{
     color: #4d4d4d;
@@ -985,9 +976,20 @@ body.hotkeys-edit-mode #tree li::before{
     white-space: pre-wrap;
     cursor: text;
   }
+
+  :root{
+    --caption-ordinal-offset: 35px;
+  }
+  
+  body.ordinals-on .captions{
+    margin-left: var(--caption-ordinal-offset);
+    padding-bottom: 2px;
+    margin-top: -2px;
+
+  }
   
   .caption + .caption{
-    margin-top: -0.3em;
+    margin-top: -0.2em;
   }
   
   .edit-caption{
@@ -995,3 +997,303 @@ body.hotkeys-edit-mode #tree li::before{
   min-height: 1.3em;
   white-space: pre-wrap;
   }
+
+  /* ===== topbar color tools ===== */
+
+.color-tools{
+  display:inline-flex;
+  align-items:center;
+  gap:14px;
+  margin-left:21px;
+}
+
+.color-group{
+  display:inline-flex;
+  align-items:center;
+  gap:0;
+  border:1px solid #cfcfcf;
+  background:#f7f7f7;
+  border-radius:2px;
+  padding:2px 4px;
+}
+
+.color-main-btn{
+  min-width:24px;
+  width:24px;
+  height:24px;
+  padding:0;
+  margin:0;
+  border:1px solid #c8c8c8;
+  background:#efefef;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:2px;
+}
+
+.color-main-btn:hover{
+  background:#e6e6e6;
+}
+
+.color-main-btn:active{
+  background:#dcdcdc;
+}
+
+
+
+
+
+
+
+.color-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height:1;
+  color:#444;
+  user-select:none;
+}
+
+.color-icon-text{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+}
+
+.color-icon-text-letter{
+  font-size:14px;
+  line-height:1;
+  color:#555;
+  font-weight:400;
+}
+
+.color-icon-text-bar{
+  width:18px;
+  height:5px;
+  margin-top:1px;
+  background:#000;
+  border-radius:0;
+  flex:0 0 auto;
+}
+
+
+
+
+
+
+
+
+
+
+/* .color-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:100%;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size:14px;
+  line-height:1;
+  color:#444;
+  user-select:none;
+}
+
+.color-icon-text{
+  font-weight:700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+} */
+
+.color-icon-bg{
+  font-size:13px;
+}
+
+.color-group{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.color-swatches{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  margin-left: 8px;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+
+  transition: max-width 0.2s ease, opacity 0.15s ease;
+}
+
+.color-swatches.is-open{
+  max-width: 260px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.color-dot{
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  border:none;
+  padding:0;
+  margin:0;
+  cursor:pointer;
+  position:relative;
+  box-sizing:border-box;
+  flex:0 0 auto;
+}
+
+.color-dot:hover{
+  transform: scale(1.05);
+}
+
+.color-dot:active{
+  transform: scale(0.98);
+}
+
+.color-dot[data-color="default"]{
+  background:#111;
+}
+
+.color-dot[data-color="#000000"]{ background:#000000; }
+.color-dot[data-color="#6E6E6E"]{ background:#6E6E6E; }
+.color-dot[data-color="#B5B5B5"]{ background:#B5B5B5; }
+.color-dot[data-color="#D0021B"]{ background:#D0021B; }
+.color-dot[data-color="#F5A623"]{ background:#F5A623; }
+.color-dot[data-color="#F8E71C"]{ background:#F8E71C; }
+.color-dot[data-color="#7ED321"]{ background:#7ED321; }
+.color-dot[data-color="#4A90E2"]{ background:#4A90E2; }
+.color-dot[data-color="#1E06C7"]{ background:#1E06C7; }
+
+.color-dot[data-color="transparent"]{
+  background:
+    linear-gradient(45deg, transparent 42%, #777 42%, #777 58%, transparent 58%),
+    #ffffff;
+  border:1px solid #c7c7c7;
+}
+
+.color-dot[data-color="#F6D6D6"]{ background:#F6D6D6; }
+.color-dot[data-color="#F8E0C2"]{ background:#F8E0C2; }
+.color-dot[data-color="#F8EDAF"]{ background:#F8EDAF; }
+.color-dot[data-color="#DDECCB"]{ background:#DDECCB; }
+.color-dot[data-color="#D7E8F6"]{ background:#D7E8F6; }
+.color-dot[data-color="#D9E4F7"]{ background:#D9E4F7; }
+
+.color-dot.is-active::after{
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border:1px solid #8a8a8a;
+  border-radius:50%;
+  pointer-events:none;
+}
+
+.color-dot[data-color="default"].is-active::before,
+.color-dot[data-color="#000000"].is-active::before,
+.color-dot[data-color="#6E6E6E"].is-active::before,
+.color-dot[data-color="#1E06C7"].is-active::before,
+.color-dot.color-dot-bg[data-color="#000000"].is-active::before,
+.color-dot.color-dot-bg[data-color="#6E6E6E"].is-active::before{
+  content:"✓";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  line-height:1;
+  color:#fff;
+  font-weight:700;
+  pointer-events:none;
+}
+
+.color-dot.is-active:not([data-color="default"]):not([data-color="#000000"]):not([data-color="#6E6E6E"]):not([data-color="#1E06C7"])::before,
+.color-dot.color-dot-bg.is-active:not([data-color="transparent"]):not([data-color="#000000"]):not([data-color="#6E6E6E"])::before{
+  content:"✓";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  line-height:1;
+  color:#222;
+  font-weight:700;
+  pointer-events:none;
+}
+
+.color-dot[data-color="transparent"].is-active::before{
+  content:"✓";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  line-height:1;
+  color:#444;
+  font-weight:700;
+  pointer-events:none;
+}
+
+
+.color-icon-bg{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.color-icon-bg-img{
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+  filter: grayscale(1) brightness(0.4); /* делает как в макете */
+}
+
+.color-icon-bg-bar{
+  width: 18px;
+  height: 5px;
+  margin-top: 2px;
+  background: #e8e8e8;
+  border: 1px solid #d8d8d8;
+  box-sizing: border-box;
+}
+
+
+button,
+button *,
+.btnn,
+.btnn *,
+.formatblock,
+.formatblock *,
+.color-tools,
+.color-tools *{
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.caption-multiline{
+  line-height: 1;
+}
+
+.margin {
+  margin-right: 21px;
+}

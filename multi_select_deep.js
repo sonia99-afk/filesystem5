@@ -4,7 +4,7 @@
 // - deepClick мышью: может быть и Click, и DblClick
 //
 // Визуальная подсветка: .row[data-multi-owner="deep"].multi
-// Экспорт API: window.multiSelectDeep = { getIds, clear, size, has, debug }
+// Экспорт API: window.multiSelectDeep = { getIds, clear, size, has, debug, handleDeepRangeKey }
 
 (function () {
   if (typeof window === "undefined") return;
@@ -359,6 +359,7 @@
         ids: Array.from(state.ids),
       };
     },
+    handleDeepRangeKey
   };
 
   // Сброс deep-выделения при обычной навигации стрелками

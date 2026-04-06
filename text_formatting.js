@@ -81,7 +81,13 @@
 
   function activeRichEditor() {
     const ae = document.activeElement;
-    if (ae && ae.classList?.contains("edit-rich") && ae.isContentEditable) return ae;
+    if (!ae) return null;
+  
+    if (ae.classList?.contains("edit-rich")) return ae;
+  
+    // 🔥 ДОБАВИТЬ ЭТО
+    if (ae.classList?.contains("edit-caption")) return ae;
+  
     return null;
   }
 
@@ -522,60 +528,69 @@
     const sel = getSelectionOffsetsInEditor(ed);
     if (!sel) return;
     if (sel.start === sel.end) return;
-
+  
     const current = normalizeRichHtml(ed.innerHTML || "");
     const segments = htmlToSegments(current.html || escapeHtml(current.text || ""));
-
+  
     let pos = 0;
     let hasSelectedText = false;
-    let allSelectedAlreadyOn = true;
-
+    let selectedHasOn = false;
+    let selectedHasOff = false;
+  
     for (const seg of segments) {
       if (seg.br) {
         pos += 1;
         continue;
       }
-
+  
       const text = seg.text || "";
       const len = text.length;
       const segStart = pos;
       const segEnd = pos + len;
-
+  
       const from = Math.max(segStart, sel.start);
       const to = Math.min(segEnd, sel.end);
-
+  
       if (from < to) {
         hasSelectedText = true;
-        if (!seg.fmt?.[key]) {
-          allSelectedAlreadyOn = false;
-          break;
+  
+        if (seg.fmt?.[key]) {
+          selectedHasOn = true;
+        } else {
+          selectedHasOff = true;
         }
+  
+        if (selectedHasOn && selectedHasOff) break;
       }
-
+  
       pos = segEnd;
     }
-
+  
     if (!hasSelectedText) return;
-
-    const turnOn = !allSelectedAlreadyOn;
+  
+    // none  -> включаем
+    // all   -> снимаем
+    // mixed -> тоже снимаем
+    const turnOn = !selectedHasOn;
+  
     const next = [];
-
     pos = 0;
+  
     for (const seg of segments) {
       if (seg.br) {
         next.push({ br: true });
         pos += 1;
         continue;
       }
-
+  
       const text = seg.text || "";
       const len = text.length;
       const segStart = pos;
       const segEnd = pos + len;
-
+  
       const from = Math.max(segStart, sel.start);
       const to = Math.min(segEnd, sel.end);
-
+  
       if (from >= to) {
         next.push({
           text,
@@ -584,38 +599,38 @@
         pos = segEnd;
         continue;
       }
-
+  
       const leftLen = from - segStart;
       const midLen = to - from;
       const rightLen = segEnd - to;
-
+  
       if (leftLen > 0) {
         next.push({
           text: text.slice(0, leftLen),
           fmt: cloneFmtObject(seg.fmt),
         });
       }
-
+  
       if (midLen > 0) {
         const midFmt = cloneFmtObject(seg.fmt);
         midFmt[key] = turnOn;
-
+  
         next.push({
           text: text.slice(leftLen, leftLen + midLen),
           fmt: midFmt,
         });
       }
-
+  
       if (rightLen > 0) {
         next.push({
           text: text.slice(len - rightLen),
           fmt: cloneFmtObject(seg.fmt),
         });
       }
-
+  
       pos = segEnd;
     }
-
+  
     const nextHtml = segmentsToHtml(next) || escapeHtml(current.text || "");
     ed.innerHTML = nextHtml;
     setSelectionOffsetsInEditor(ed, sel.start, sel.end);
@@ -799,49 +814,91 @@
       ["fmtUnderline", "u"],
       ["fmtStrike", "s"],
     ];
-
+  
     const rich = activeRichEditor();
-
+  
     if (rich) {
+      const sel = getSelectionOffsetsInEditor(rich);
       const normalized = normalizeRichHtml(rich.innerHTML || "");
-      const coverage = getFmtCoverageFromHtml(
-        normalized.html || escapeHtml(normalized.text || ""),
-        normalized.text || ""
+      const segments = htmlToSegments(
+        normalized.html || escapeHtml(normalized.text || "")
       );
-
-      const seedFmt =
-        rich.__seedFmt ||
-        window.__renameFmtSession?.seedFmt || {
-          b: false,
-          i: false,
-          u: false,
-          s: false,
+  
+      const stateByKey = {
+        b: "none",
+        i: "none",
+        u: "none",
+        s: "none",
+      };
+  
+      if (sel && sel.start !== sel.end) {
+        let pos = 0;
+  
+        const acc = {
+          b: { on: false, off: false },
+          i: { on: false, off: false },
+          u: { on: false, off: false },
+          s: { on: false, off: false },
         };
-
+  
+        for (const seg of segments) {
+          if (seg.br) {
+            pos += 1;
+            continue;
+          }
+  
+          const text = seg.text || "";
+          const len = text.length;
+          const segStart = pos;
+          const segEnd = pos + len;
+  
+          const from = Math.max(segStart, sel.start);
+          const to = Math.min(segEnd, sel.end);
+  
+          if (from < to) {
+            for (const key of ["b", "i", "u", "s"]) {
+              if (seg.fmt?.[key]) acc[key].on = true;
+              else acc[key].off = true;
+            }
+          }
+  
+          pos = segEnd;
+        }
+  
+        for (const key of ["b", "i", "u", "s"]) {
+          if (acc[key].on && acc[key].off) stateByKey[key] = "some";
+          else if (acc[key].on) stateByKey[key] = "all";
+          else stateByKey[key] = "none";
+        }
+      } else {
+        const coverage = getFmtCoverageFromHtml(
+          normalized.html || escapeHtml(normalized.text || ""),
+          normalized.text || ""
+        );
+  
+        for (const key of ["b", "i", "u", "s"]) {
+          stateByKey[key] = coverage[key];
+        }
+      }
+  
       for (const [btnId, key] of ids) {
         const btn = document.getElementById(btnId);
         if (!btn) continue;
-
-        const seed = !!seedFmt[key];
-        const cov = coverage[key];
-
-        let active;
-        if (seed) {
-          active = cov === "all" || cov === "some";
-        } else {
-          active = cov === "all";
-        }
-
+  
+        // Кнопка активна только для своего собственного состояния.
+        // "some" тоже считаем активным, но только у этой кнопки.
+        const active = stateByKey[key] === "all" || stateByKey[key] === "some";
         btn.classList.toggle("active", active);
       }
+  
       return;
     }
-
+  
     const rows = getTargetRows();
     const row = rows[0];
     const id = row?.dataset?.id;
     const fmt = id ? getFmt(id) : emptyFmt();
-
+  
     for (const [btnId, key] of ids) {
       const btn = document.getElementById(btnId);
       if (!btn) continue;
@@ -938,20 +995,88 @@
 
   function handleHotkeys(e) {
     if (window.hotkeysMode === "custom") return;
-    if (typeof window.isHotkey !== "function") return;
-
-    const inRich = !!activeRichEditor();
-
+  
+    const rich = activeRichEditor();
+    const inRich = !!rich;
+  
     const stop = () => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation?.();
     };
-
-    if (window.isHotkey(e, "bold"))      { stop(); inRich ? applyInlineFmt("b") : toggleOnTargets("b"); return; }
-    if (window.isHotkey(e, "italic"))    { stop(); inRich ? applyInlineFmt("i") : toggleOnTargets("i"); return; }
-    if (window.isHotkey(e, "underline")) { stop(); inRich ? applyInlineFmt("u") : toggleOnTargets("u"); return; }
-    if (window.isHotkey(e, "strike"))    { stop(); inRich ? applyInlineFmt("s") : toggleOnTargets("s"); return; }
+  
+    // В режиме переименования / редактирования подписи
+    // НЕ используем window.isHotkey(), потому что он отключается в contentEditable
+    if (inRich) {
+      const normalize = window.hotkeys?.normalizeCombo;
+  
+      const haveRaw =
+        typeof comboFromKeyEvent === "function"
+          ? comboFromKeyEvent(e)
+          : "";
+  
+      const have = normalize ? normalize(haveRaw) : haveRaw;
+      if (!have) return;
+  
+      const matches = (action) => {
+        const wantRaw = window.hotkeys?.get?.(action) || "";
+        const want = normalize ? normalize(wantRaw) : wantRaw;
+        return !!want && have === want;
+      };
+  
+      if (matches("bold")) {
+        stop();
+        applyInlineFmt("b");
+        return;
+      }
+  
+      if (matches("italic")) {
+        stop();
+        applyInlineFmt("i");
+        return;
+      }
+  
+      if (matches("underline")) {
+        stop();
+        applyInlineFmt("u");
+        return;
+      }
+  
+      if (matches("strike")) {
+        stop();
+        applyInlineFmt("s");
+        return;
+      }
+  
+      return;
+    }
+  
+    // В обычном режиме оставляем старую логику дерева
+    if (typeof window.isHotkey !== "function") return;
+  
+    if (window.isHotkey(e, "bold")) {
+      stop();
+      toggleOnTargets("b");
+      return;
+    }
+  
+    if (window.isHotkey(e, "italic")) {
+      stop();
+      toggleOnTargets("i");
+      return;
+    }
+  
+    if (window.isHotkey(e, "underline")) {
+      stop();
+      toggleOnTargets("u");
+      return;
+    }
+  
+    if (window.isHotkey(e, "strike")) {
+      stop();
+      toggleOnTargets("s");
+      return;
+    }
   }
 
   (function injectStyle() {
@@ -981,23 +1106,8 @@
     document.head.appendChild(st);
   })();
 
-  (function ensureHotkeyDefaults() {
-    const hk = window.hotkeys;
-    if (!hk || !hk.DEFAULTS || !hk.get || !hk.set) return;
+  
 
-    const maybeAdd = (action, combo) => {
-      if (hk.get(action)) return;
-      try {
-        hk.DEFAULTS[action] = combo;
-        hk.set(action, combo);
-      } catch (_) {}
-    };
-
-    maybeAdd("bold", "Control+B");
-    maybeAdd("italic", "Control+I");
-    maybeAdd("underline", "Control+U");
-    maybeAdd("strike", "Control+Shift+X");
-  })();
 
   bindButton("fmtBold", "b");
   bindButton("fmtItalic", "i");

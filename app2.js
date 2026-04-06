@@ -1,5 +1,8 @@
 const LEVEL = { COMPANY: 0, PROJECT: 1, DEPT: 2, ROLE: 3, STEP: 20 };
 
+let showOrdinals = true;
+let showCaptions = true;
+
 const DEFAULT_NAME = {
   0: 'Уровень 0',
   1: 'Уровень 1',
@@ -255,6 +258,55 @@ function cssEscape(s) {
   if (window.CSS && typeof CSS.escape === 'function') return CSS.escape(v);
   return v.replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
 }
+
+// ===== ORDINAL INDICATOR =====
+function ordinalPathToString(path) {
+  return Array.isArray(path) ? path.join(".") : "";
+}
+
+function buildOrdinalBadge(path) {
+  const s = ordinalPathToString(path);
+  if (!s) return null;
+
+  const wrap = document.createElement("span");
+  wrap.className = "ordinal-badge";
+
+  const left = document.createElement("span");
+  left.textContent = "[";
+  left.style.color = "#000";
+
+  const num = document.createElement("span");
+  num.textContent = s;
+  num.style.color = "#1E06C7";
+
+  const right = document.createElement("span");
+  right.textContent = "]";
+  right.style.color = "#000";
+
+  wrap.appendChild(left);
+  wrap.appendChild(num);
+  wrap.appendChild(right);
+
+  return wrap;
+}
+
+(function injectOrdinalStyle() {
+  const id = "ordinal-style";
+  if (document.getElementById(id)) return;
+
+  const st = document.createElement("style");
+  st.id = id;
+  st.textContent = `
+    .ordinal-badge{
+      display:inline-block;
+      margin-right:6px;
+      color:#1E06C7;
+      white-space:nowrap;
+      flex:0 0 auto;
+    }
+  `;
+  document.head.appendChild(st);
+})();
 
 function findWithParent(node, id, parent = null) {
   if (node.id === id) return { node, parent };
@@ -585,7 +637,7 @@ function render() {
 
   const ul = document.createElement('ul');
   ul.dataset.level = String(root.level);
-  ul.appendChild(renderNode(root));
+  ul.appendChild(renderNode(root, []));
   host.appendChild(ul);
 
   layoutTrunks();
@@ -698,7 +750,7 @@ function handleRowMouseHotkeys(e, n, baseToken) {
   return false;
 }
 
-function renderNode(n) {
+function renderNode(n, ordinalPath = []) {
   const li = document.createElement('li');
   if (n.id === root.id) li.classList.add('root');
 
@@ -712,12 +764,20 @@ function renderNode(n) {
   row.tabIndex = 0;
 
   const label = document.createElement('span');
-  label.className = 'label';
+label.className = 'label';
 
-  if (n.nameHtml) label.innerHTML = n.nameHtml;
-  else label.textContent = n.name || '';
+// ← добавили индекс
+if (showOrdinals) {
+  const ordinalBadge = buildOrdinalBadge(ordinalPath);
+  if (ordinalBadge) {
+    row.appendChild(ordinalBadge);
+  }
+}
 
-  row.appendChild(label);
+if (n.nameHtml) label.innerHTML = n.nameHtml;
+else label.textContent = n.name || '';
+
+row.appendChild(label);
 
   const act = document.createElement('span');
   act.className = 'act';
@@ -885,13 +945,18 @@ function renderNode(n) {
 
   li.appendChild(row);
 
-  if (Array.isArray(n.captions) && n.captions.length) {
+  if (showCaptions && Array.isArray(n.captions) && n.captions.length) {
     const caps = document.createElement("div");
     caps.className = "captions";
   
     for (const c of n.captions) {
       const cap = document.createElement("div");
-      cap.className = "caption";
+
+const isMultiline =
+  (c.text || "").includes("\n") ||
+  (c.textHtml || "").includes("<br>");
+
+cap.className = "caption" + (isMultiline ? " caption-multiline" : "");
       cap.dataset.nodeId = n.id;
       cap.dataset.captionId = c.id;
   
@@ -914,7 +979,9 @@ function renderNode(n) {
   if (n.children && n.children.length) {
     const ul = document.createElement('ul');
     ul.dataset.level = String(n.level + 1);
-    for (const ch of n.children) ul.appendChild(renderNode(ch));
+    n.children.forEach((ch, index) => {
+      ul.appendChild(renderNode(ch, [...ordinalPath, index + 1]));
+    });
     li.appendChild(ul);
   }
 
@@ -982,24 +1049,29 @@ function layoutTrunks() {
     const shift = parseFloat(cs.getPropertyValue('--trunk-shift')) || 0;
     const x = (ulBox.left - liBox.left) + trunkX + shift;
 
-    // Стандартная точка начала линии: чуть ниже строки родителя
-    const parentStartY = (pBox.top - liBox.top) + 12;
+    // 👇 ВОТ ГЛАВНОЕ
+let startY;
 
-    // Если у узла есть подписи, линия к детям должна начинаться ниже них
-    const caps = li.querySelector(':scope > .captions');
-    let startY = parentStartY;
+if (document.body.classList.contains("ordinals-on")) {
+  // ✅ НОВОЕ ПОВЕДЕНИЕ (с нумерацией)
+  startY = (pBox.top - liBox.top) + 12;
+} else {
+  // ✅ СТАРОЕ ПОВЕДЕНИЕ (без нумерации)
+  const parentStartY = (pBox.top - liBox.top) + 12;
 
-    if (caps) {
-      const capsBox = caps.getBoundingClientRect();
-      const capsBottomY = capsBox.bottom - liBox.top;
+  const caps = li.querySelector(':scope > .captions');
 
-      // Берём наиболее нижнюю точку:
-      // либо обычное начало от row, либо низ блока подписей
-      startY = Math.max(parentStartY, capsBottomY);
-    }
+  if (caps) {
+    const capsBox = caps.getBoundingClientRect();
+    const capsBottomY = capsBox.bottom - liBox.top;
+    startY = Math.max(parentStartY, capsBottomY);
+  } else {
+    startY = parentStartY;
+  }
+}
 
-    // Конец линии — у первого дочернего anchor
-    const endY = cBox.top - liBox.top;
+// конец линии как был
+const endY = cBox.top - liBox.top;
 
     const plink = document.createElement('div');
     plink.className = 'plink';
@@ -1232,9 +1304,66 @@ function runTests() {
   console.log('All tests passed');
 }
 
+function updateOrdinalButton() {
+  const btn = document.getElementById("toggleOrdinals");
+  if (!btn) return;
+
+  if (showOrdinals) {
+    btn.classList.add("is-active");
+  } else {
+    btn.classList.remove("is-active");
+  }
+}
+
+function syncOrdinalsModeClass() {
+  document.body.classList.toggle("ordinals-on", !!showOrdinals);
+}
+
+function initOrdinalToggle() {
+  const btn = document.getElementById("toggleOrdinals");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    showOrdinals = !showOrdinals;
+    updateOrdinalButton();
+    syncOrdinalsModeClass();
+    render();
+  });
+
+  updateOrdinalButton();
+  syncOrdinalsModeClass();
+}
+
+function updateCaptionButton() {
+  const btn = document.getElementById("toggleCaptions");
+  if (!btn) return;
+
+  if (showCaptions) {
+    btn.classList.add("is-active");
+  } else {
+    btn.classList.remove("is-active");
+  }
+}
+
+function initCaptionToggle() {
+  const btn = document.getElementById("toggleCaptions");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    showCaptions = !showCaptions;
+    updateCaptionButton();
+    render();
+  });
+
+  updateCaptionButton();
+}
+
 initProjectsSidebar();
 render();
+initOrdinalToggle();
+initCaptionToggle();
 
 if (new URLSearchParams(location.search).get('test') === '1') {
   runTests();
 }
+

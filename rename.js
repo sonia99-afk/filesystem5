@@ -164,15 +164,32 @@ function startRename(id) {
     e.stopPropagation();
     e.stopImmediatePropagation?.();
 
-    if (e.key === "Enter") {
-      e.preventDefault();
-      commit();
-      return;
-    }
-
     if (e.key === "Escape") {
       e.preventDefault();
       cancel();
+      return;
+    }
+
+    const isCaptionLineBreakHotkey =
+      typeof window.isHotkey === "function" &&
+      window.hotkeysMode !== "custom" &&
+      window.isHotkey(e, "addCaptionLineBreak");
+
+    if (isCaptionLineBreakHotkey) {
+      e.preventDefault();
+      document.execCommand("insertLineBreak");
+
+      requestAnimationFrame(() => {
+        autosizeCaptionEditorHeight();
+        relayoutTreeLines();
+      });
+
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
       return;
     }
   }, true);
@@ -299,7 +316,7 @@ function startCaptionEdit(nodeId, captionId, opts = {}) {
   el.innerHTML = "";
 
   const ed = document.createElement("div");
-  ed.className = "edit edit-caption";
+  ed.className = "edit edit-rich edit-caption";
   ed.contentEditable = "true";
   ed.spellcheck = false;
   ed.style.display = "inline-block";
@@ -450,28 +467,42 @@ function startCaptionEdit(nodeId, captionId, opts = {}) {
     stopBackspaceLeak(e);
     e.stopPropagation();
     e.stopImmediatePropagation?.();
-
+  
     if (e.key === "Escape") {
       e.preventDefault();
       cancel();
       return;
     }
-
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      commit();
-      return;
-    }
-
-    if (e.key === "Enter" && e.shiftKey) {
+  
+    if (window.hotkeysMode === "custom") return;
+  
+    const normalize = window.hotkeys?.normalizeCombo;
+  
+    const haveRaw =
+      typeof comboFromKeyEvent === "function"
+        ? comboFromKeyEvent(e)
+        : "";
+  
+    const have = normalize ? normalize(haveRaw) : haveRaw;
+  
+    const wantLineBreakRaw = window.hotkeys?.get?.("addCaptionLineBreak") || "";
+    const wantLineBreak = normalize ? normalize(wantLineBreakRaw) : wantLineBreakRaw;
+  
+    if (have && wantLineBreak && have === wantLineBreak) {
       e.preventDefault();
       document.execCommand("insertLineBreak");
-
+  
       requestAnimationFrame(() => {
         autosizeCaptionEditorHeight();
         relayoutTreeLines();
       });
-
+  
+      return;
+    }
+  
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
       return;
     }
   }, true);

@@ -11,7 +11,7 @@
   <div class="grid-container">
 
         <div class="leftbar">
-          <button class="toggle-left"></button>
+          <div class="toggle-left"><img src="icons/icon.png" class="iconsize" /></div>
           <div class="projects-title">Проекты</div>
 
           <div class="projects-list">
@@ -41,10 +41,76 @@
         </span>
         <button id="tgCopy" class="btnn">Копировать</button>
           <div class="formatblock">
-          <button id="fmtBold" class="btnn"><b>B</b></button>
-          <button id="fmtItalic" class="btnn fmtItalic"><i>I</i></button>
-          <button id="fmtUnderline" class="btnn"><u>U</u></button>
-          <button id="fmtStrike" class="btnn"><s>S</s></button>
+            <button id="fmtBold" class="btnn"><b>B</b></button>
+            <button id="fmtItalic" class="btnn fmtItalic"><i>I</i></button>
+            <button id="fmtUnderline" class="btnn"><u>U</u></button>
+            <button id="fmtStrike" class="btnn"><s>S</s></button>
+        </div>
+        <button id="toggleOrdinals" class="btnn margin">Нумерация</button>
+        <button id="toggleCaptions" class="btnn">Подписи</button>
+        <div class="color-tools" id="colorTools">
+          <div class="color-group color-group-text" aria-label="Цвет текста">
+            <button id="textColorBtn" class="btnn color-main-btn" type="button" title="Цвет текста">
+              <span class="color-icon color-icon-text">
+                <span class="color-icon-text-letter">A</span>
+                <span class="color-icon-text-bar"></span>
+              </span>
+            </button>
+        
+            <div class="color-swatches" id="textColorSwatches">
+              <button class="color-dot is-active" type="button" data-kind="text" data-color="default" title="Основной цвет"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#000000" title="Черный"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#6E6E6E" title="Серый"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#B5B5B5" title="Светло-серый"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#D0021B" title="Красный"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#F5A623" title="Оранжевый"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#F8E71C" title="Желтый"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#7ED321" title="Зеленый"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#4A90E2" title="Голубой"></button>
+              <button class="color-dot" type="button" data-kind="text" data-color="#1E06C7" title="Синий"></button>
+            </div>
+          </div>
+        
+          <div class="color-group color-group-bg" aria-label="Цвет подложки">
+            <button id="bgColorBtn" class="btnn color-main-btn" type="button" title="Цвет подложки">
+              <span class="color-icon color-icon-bg">
+                <img src="icons/fill.png" class="color-icon-bg-img" />
+                <span class="color-icon-bg-bar"></span>
+              </span>
+            </button>
+        
+            <div class="color-swatches" id="bgColorSwatches">
+              <button class="color-dot color-dot-bg is-active" type="button" data-kind="bg" data-color="transparent" title="Без подложки"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#000000" title="Черная"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#6E6E6E" title="Серая"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#B5B5B5" title="Светло-серая"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#F6D6D6" title="Светло-красная"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#F8E0C2" title="Светло-оранжевая"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#F8EDAF" title="Светло-желтая"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#DDECCB" title="Светло-зеленая"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#D7E8F6" title="Светло-голубая"></button>
+              <button class="color-dot color-dot-bg" type="button" data-kind="bg" data-color="#D9E4F7" title="Светло-синяя"></button>
+            </div>
+          </div>
+
+          <div class="color-group color-group-block" aria-label="Цвет фона блока">
+            <button id="blockBgBtn" class="btnn color-main-btn" type="button" title="Фон блока">
+              Б
+            </button>
+          
+            <div class="color-swatches" id="blockBgSwatches">
+              <button class="color-dot color-dot-block is-active" type="button" data-kind="block" data-color="transparent" title="Без фона"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#000000" title="Черный"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#6E6E6E" title="Серый"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#B5B5B5" title="Светло-серый"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#F6D6D6" title="Светло-красный"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#F8E0C2" title="Светло-оранжевый"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#F8EDAF" title="Светло-желтый"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#DDECCB" title="Светло-зеленый"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#D7E8F6" title="Светло-голубой"></button>
+              <button class="color-dot color-dot-block" type="button" data-kind="block" data-color="#D9E4F7" title="Светло-синий"></button>
+            </div>
+          </div>
         </div>
       </div>
     
@@ -59,7 +125,7 @@
   
    
       <aside class="sidebar">
-        <button class="toggle-right"></button>
+        <button class="toggle-right"><img src="icons/icon2.png" class="iconsize" /></button>
         <div class="panel-title">Список функций и горячие клавиши</div>
       
         <table class="hotkeys">
@@ -92,7 +158,14 @@
               <td>Добавить подпись</td>
               <td data-action="addCaption">Ctrl/Cmd+Enter</td>
               <td>-</td>
-              <td style="background-color: pink;">!!!!нет!!!!</td>
+              <td style="background-color: #FAEEC6;">нет, добавить позже</td>
+            </tr>
+
+            <tr>
+              <td>Перенос строки в подписи</td>
+              <td data-action="addCaptionLineBreak">Shift+Enter</td>
+              <td>-</td>
+              <td>Во время редактирования подписи</td>
             </tr>
         
             <!-- Навигация -->
@@ -165,7 +238,7 @@
         
             <tr>
               <td>Удалить</td>
-              <td data-action="delete">Backspace</td>
+              <td data-action="delete">Ctrl/Cmd+Backspace</td>
               <td data-action="deleteClick"></td>
               <td>[х]</td>
             </tr>
@@ -233,6 +306,38 @@
               <td>-</td>
               <td><u>U</u></td>
             </tr>
+
+            <tr>
+              <td rowspan="10">Цвет текста</td>
+              <td data-action="textColor1">Ctrl/Cmd+1</td>
+              <td rowspan="10">-</td>
+              <td rowspan="10">Палитра “Текст” в верхнем баре</td>
+            </tr>
+            <tr><td data-action="textColor2">Ctrl/Cmd+2</td></tr>
+            <tr><td data-action="textColor3">Ctrl/Cmd+3</td></tr>
+            <tr><td data-action="textColor4">Ctrl/Cmd+4</td></tr>
+            <tr><td data-action="textColor5">Ctrl/Cmd+5</td></tr>
+            <tr><td data-action="textColor6">Ctrl/Cmd+6</td></tr>
+            <tr><td data-action="textColor7">Ctrl/Cmd+7</td></tr>
+            <tr><td data-action="textColor8">Ctrl/Cmd+8</td></tr>
+            <tr><td data-action="textColor9">Ctrl/Cmd+9</td></tr>
+            <tr><td data-action="textColor0">Ctrl/Cmd+0</td></tr>
+            
+            <tr>
+              <td rowspan="10">Цвет подложки</td>
+              <td data-action="bgColor1">Alt+1</td>
+              <td rowspan="10">-</td>
+              <td rowspan="10">Палитра “Подложка” в верхнем баре</td>
+            </tr>
+            <tr><td data-action="bgColor2">Alt+2</td></tr>
+            <tr><td data-action="bgColor3">Alt+3</td></tr>
+            <tr><td data-action="bgColor4">Alt+4</td></tr>
+            <tr><td data-action="bgColor5">Alt+5</td></tr>
+            <tr><td data-action="bgColor6">Alt+6</td></tr>
+            <tr><td data-action="bgColor7">Alt+7</td></tr>
+            <tr><td data-action="bgColor8">Alt+8</td></tr>
+            <tr><td data-action="bgColor9">Alt+9</td></tr>
+            <tr><td data-action="bgColor0">Alt+0</td></tr>
           </tbody>
         </table>
 
@@ -268,7 +373,9 @@
   <script src="multi_move_hierarchy.js"></script>
   <script src="tg_export_mode.js"></script>
   <script src="text_formatting.js"></script>
-
+  <script src="color_tools_ui.js"></script>
+  <script src="text_color_formatting.js"></script>
+  <script src="block_bg_formatting.js"></script>
   <script src="drag_move.js"></script>
 
   <script src="panel_toggle.js"></script>
