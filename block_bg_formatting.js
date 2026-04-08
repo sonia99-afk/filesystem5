@@ -3,6 +3,38 @@
   
     window.__blockBgMap = window.__blockBgMap || Object.create(null);
   
+    if (typeof window.snapshot === "function" && !window.snapshot.__blockBgPatched) {
+      const _snapshot = window.snapshot;
+      window.snapshot = function patchedSnapshotWithBlockBg() {
+        const raw = _snapshot();
+        const data = JSON.parse(raw);
+  
+        data.__blockBgMap = { ...(window.__blockBgMap || {}) };
+  
+        return JSON.stringify(data);
+      };
+      window.snapshot.__blockBgPatched = true;
+    }
+  
+    if (typeof window.restore === "function" && !window.restore.__blockBgPatched) {
+      const _restore = window.restore;
+      window.restore = function patchedRestoreWithBlockBg(state) {
+        try {
+          const data = JSON.parse(state);
+          window.__blockBgMap = data.__blockBgMap || Object.create(null);
+        } catch (_) {
+          window.__blockBgMap = Object.create(null);
+        }
+  
+        _restore(state);
+  
+        requestAnimationFrame(() => {
+          applyBgToAllRows();
+        });
+      };
+      window.restore.__blockBgPatched = true;
+    }
+  
     function host() {
       return document.getElementById("tree");
     }
@@ -39,7 +71,7 @@
     function applyBlockBgToSelected(color) {
       if (typeof selectedId === "undefined" || !selectedId) return;
   
-      const nextColor = color === "transparent" ? "" : (color || "");
+      const nextColor = color === "transparent" ? "" : String(color || "").trim();
       const prevColor = window.__blockBgMap?.[selectedId] || "";
   
       if (prevColor === nextColor) return;
@@ -61,7 +93,8 @@
       if (typeof render === "function") {
         render();
       } else {
-        applyBgToAllRows();
+        const row = rowById(selectedId);
+        applyBgToRow(row);
       }
     }
   

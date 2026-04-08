@@ -56,9 +56,14 @@
     deleteClick: "",
 
     bold: "Primary+B",
-italic: "Primary+I",
-underline: "Primary+U",
-strike: "Primary+Shift+X",
+    italic: "Primary+I",
+    underline: "Primary+U",
+    strike: "Primary+Shift+X",
+
+    copy: "Primary+C",
+    cut: "Primary+X",
+    paste: "Primary+V",
+    duplicate: "Primary+D",
 
     // Undo/Redo
     undo: "Primary+Z",

@@ -640,6 +640,7 @@ function render() {
   ul.appendChild(renderNode(root, []));
   host.appendChild(ul);
 
+  applyCaptionOrdinalOffsets();
   layoutTrunks();
 
   if (treeHasFocus) focusSelectedRow();
@@ -681,6 +682,8 @@ function makeBtn(midText, onClick) {
 
   return b;
 }
+
+
 
 function handleRowMouseHotkeys(e, n, baseToken) {
   if (isTreeLocked()) return false;
@@ -750,6 +753,40 @@ function handleRowMouseHotkeys(e, n, baseToken) {
   return false;
 }
 
+function applyCaptionOrdinalOffsets() {
+  const tree = document.getElementById("tree");
+  if (!tree) return;
+
+  const rows = tree.querySelectorAll(".row[data-id]");
+
+  rows.forEach((row) => {
+    const li = row.closest("li");
+    if (!li) return;
+
+    const caps = li.querySelector(":scope > .captions");
+    if (!caps) return;
+
+    // если нумерация выключена — сбрасываем
+    if (!showOrdinals || !document.body.classList.contains("ordinals-on")) {
+      caps.style.marginLeft = "0px";
+      return;
+    }
+
+    const badge = row.querySelector(":scope > .ordinal-badge");
+    if (!badge) {
+      caps.style.marginLeft = "0px";
+      return;
+    }
+
+    const badgeBox = badge.getBoundingClientRect();
+    const badgeStyle = getComputedStyle(badge);
+    const mr = parseFloat(badgeStyle.marginRight) || 0;
+
+    const shift = badgeBox.width + mr;
+    caps.style.marginLeft = `${Math.ceil(shift)}px`;
+  });
+}
+
 function renderNode(n, ordinalPath = []) {
   const li = document.createElement('li');
   if (n.id === root.id) li.classList.add('root');
@@ -757,6 +794,8 @@ function renderNode(n, ordinalPath = []) {
   const anchor = document.createElement('span');
   anchor.className = 'anchor';
   li.appendChild(anchor);
+
+  
 
   const row = document.createElement('span');
   row.dataset.id = n.id;

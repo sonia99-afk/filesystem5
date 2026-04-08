@@ -134,71 +134,83 @@
   function normalizeRichHtml(html) {
     const tmp = document.createElement("div");
     tmp.innerHTML = html || "";
-
+  
     const SEG_BR = { __br: true };
-
+  
     function escapeText(s) {
       return String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
     }
-
+  
     function cloneLocalFmt(fmt) {
       return {
-        b: !!fmt.b,
-        i: !!fmt.i,
-        u: !!fmt.u,
-        s: !!fmt.s,
+        b: !!fmt?.b,
+        i: !!fmt?.i,
+        u: !!fmt?.u,
+        s: !!fmt?.s,
+        textColor: fmt?.textColor || "",
+        bgColor: fmt?.bgColor || "",
       };
     }
-
+  
     function sameFmt(a, b) {
       return !!a && !!b &&
         !!a.b === !!b.b &&
         !!a.i === !!b.i &&
         !!a.u === !!b.u &&
-        !!a.s === !!b.s;
+        !!a.s === !!b.s &&
+        String(a.textColor || "") === String(b.textColor || "") &&
+        String(a.bgColor || "") === String(b.bgColor || "");
     }
-
+  
     function applyElementFmt(el, parentFmt) {
       const fmt = cloneLocalFmt(parentFmt);
       const tag = (el.tagName || "").toLowerCase();
-
+  
       if (tag === "b" || tag === "strong") fmt.b = true;
       if (tag === "i" || tag === "em") fmt.i = true;
       if (tag === "u") fmt.u = true;
       if (tag === "s" || tag === "strike" || tag === "del") fmt.s = true;
-
+  
       if (el.classList?.contains("rt-b")) fmt.b = true;
       if (el.classList?.contains("rt-i")) fmt.i = true;
       if (el.classList?.contains("rt-u")) fmt.u = true;
       if (el.classList?.contains("rt-s")) fmt.s = true;
-
+  
+      if (el.classList?.contains("rt-color")) {
+        fmt.textColor = el.style.getPropertyValue("--rt-color")?.trim() || "";
+      }
+  
+      if (el.classList?.contains("rt-bg")) {
+        fmt.bgColor = el.style.getPropertyValue("--rt-bg")?.trim() || "";
+      }
+  
       const style = String(el.getAttribute("style") || "").toLowerCase();
-
+  
       if (/font-weight\s*:\s*(normal|400)\b/.test(style)) fmt.b = false;
       if (/font-weight\s*:\s*(bold|[5-9]00)\b/.test(style)) fmt.b = true;
-
+  
       if (/font-style\s*:\s*normal\b/.test(style)) fmt.i = false;
       if (/font-style\s*:\s*(italic|oblique)\b/.test(style)) fmt.i = true;
-
+  
       if (/text-decoration(-line)?\s*:\s*none\b/.test(style)) {
         fmt.u = false;
         fmt.s = false;
       }
-
+  
       if (/text-decoration[^:]*:\s*[^;]*underline/.test(style)) fmt.u = true;
       if (/text-decoration[^:]*:\s*[^;]*(line-through|strike)/.test(style)) fmt.s = true;
-
+  
       if (/text-decoration[^:]*:\s*[^;]*\bno-underline\b/.test(style)) fmt.u = false;
       if (/text-decoration[^:]*:\s*[^;]*\bno-line-through\b/.test(style)) fmt.s = false;
-
+  
       return fmt;
     }
-
+  
     const segments = [];
-
+  
     function pushText(text, fmt) {
       if (!text) return;
       const prev = segments[segments.length - 1];
@@ -208,56 +220,73 @@
         segments.push({ text, fmt: cloneLocalFmt(fmt) });
       }
     }
-
+  
     function walk(node, inheritedFmt) {
       for (const ch of Array.from(node.childNodes)) {
         if (ch.nodeType === Node.TEXT_NODE) {
           pushText(ch.nodeValue || "", inheritedFmt);
           continue;
         }
-
+  
         if (ch.nodeType !== Node.ELEMENT_NODE) continue;
-
+  
         const tag = ch.tagName.toLowerCase();
-
+  
         if (tag === "br") {
           segments.push(SEG_BR);
           continue;
         }
-
+  
         const nextFmt = applyElementFmt(ch, inheritedFmt);
         walk(ch, nextFmt);
       }
     }
-
-    walk(tmp, { b: false, i: false, u: false, s: false });
-
+  
+    walk(tmp, {
+      b: false,
+      i: false,
+      u: false,
+      s: false,
+      textColor: "",
+      bgColor: "",
+    });
+  
     function wrapTextByFmt(text, fmt) {
       let html = escapeText(text);
       if (!html) return "";
-
+    
       if (fmt.s) html = `<span class="rt-s">${html}</span>`;
       if (fmt.u) html = `<span class="rt-u">${html}</span>`;
       if (fmt.i) html = `<span class="rt-i">${html}</span>`;
       if (fmt.b) html = `<span class="rt-b">${html}</span>`;
+    
+      if (fmt.textColor) {
+        html = `<span class="rt-color" style="--rt-color:${fmt.textColor};">${html}</span>`;
+      }
+    
+      if (fmt.bgColor) {
+        html = `<span class="rt-bg" style="--rt-bg:${fmt.bgColor};">${html}</span>`;
+      }
+    
       return html;
     }
-
+  
     let out = "";
     let plain = "";
-
+  
     for (const seg of segments) {
       if (seg.__br) {
         out += "<br>";
         plain += "\n";
         continue;
       }
-
+  
       out += wrapTextByFmt(seg.text, seg.fmt);
       plain += seg.text;
     }
-
-    const hasFmt = /class="rt-[bius]"/.test(out);
+  
+    const hasFmt = /class="rt-(b|i|u|s|color|bg)"/.test(out);
+  
     return {
       html: hasFmt ? out : "",
       text: plain,
@@ -270,6 +299,8 @@
       i: !!fmt?.i,
       u: !!fmt?.u,
       s: !!fmt?.s,
+      textColor: fmt?.textColor || "",
+      bgColor: fmt?.bgColor || "",
     };
   }
 
@@ -278,49 +309,59 @@
       !!a.b === !!b.b &&
       !!a.i === !!b.i &&
       !!a.u === !!b.u &&
-      !!a.s === !!b.s;
+      !!a.s === !!b.s &&
+      String(a.textColor || "") === String(b.textColor || "") &&
+      String(a.bgColor || "") === String(b.bgColor || "");
   }
 
   function htmlToSegments(html) {
     const normalized = normalizeRichHtml(html || "");
     const tmp = document.createElement("div");
     tmp.innerHTML = normalized.html || escapeHtml(normalized.text || "");
-
+  
     const segments = [];
-
+  
     function applyElementFmt(el, parentFmt) {
       const fmt = cloneFmtObject(parentFmt);
       const tag = (el.tagName || "").toLowerCase();
-
+  
       if (tag === "b" || tag === "strong") fmt.b = true;
       if (tag === "i" || tag === "em") fmt.i = true;
       if (tag === "u") fmt.u = true;
       if (tag === "s" || tag === "strike" || tag === "del") fmt.s = true;
-
+  
       if (el.classList?.contains("rt-b")) fmt.b = true;
       if (el.classList?.contains("rt-i")) fmt.i = true;
       if (el.classList?.contains("rt-u")) fmt.u = true;
       if (el.classList?.contains("rt-s")) fmt.s = true;
-
+  
+      if (el.classList?.contains("rt-color")) {
+        fmt.textColor = el.style.getPropertyValue("--rt-color")?.trim() || "";
+      }
+  
+      if (el.classList?.contains("rt-bg")) {
+        fmt.bgColor = el.style.getPropertyValue("--rt-bg")?.trim() || "";
+      }
+  
       const style = String(el.getAttribute("style") || "").toLowerCase();
-
+  
       if (/font-weight\s*:\s*(normal|400)\b/.test(style)) fmt.b = false;
       if (/font-weight\s*:\s*(bold|[5-9]00)\b/.test(style)) fmt.b = true;
-
+  
       if (/font-style\s*:\s*normal\b/.test(style)) fmt.i = false;
       if (/font-style\s*:\s*(italic|oblique)\b/.test(style)) fmt.i = true;
-
+  
       if (/text-decoration(-line)?\s*:\s*none\b/.test(style)) {
         fmt.u = false;
         fmt.s = false;
       }
-
+  
       if (/text-decoration[^:]*:\s*[^;]*underline/.test(style)) fmt.u = true;
       if (/text-decoration[^:]*:\s*[^;]*(line-through|strike)/.test(style)) fmt.s = true;
-
+  
       return fmt;
     }
-
+  
     function pushText(text, fmt) {
       if (!text) return;
       const prev = segments[segments.length - 1];
@@ -333,41 +374,49 @@
         });
       }
     }
-
+  
     function walk(node, inheritedFmt) {
       for (const ch of Array.from(node.childNodes)) {
         if (ch.nodeType === Node.TEXT_NODE) {
           pushText(ch.nodeValue || "", inheritedFmt);
           continue;
         }
-
+  
         if (ch.nodeType !== Node.ELEMENT_NODE) continue;
-
+  
         const tag = ch.tagName.toLowerCase();
         if (tag === "br") {
           segments.push({ br: true });
           continue;
         }
-
+  
         const nextFmt = applyElementFmt(ch, inheritedFmt);
         walk(ch, nextFmt);
       }
     }
-
-    walk(tmp, { b: false, i: false, u: false, s: false });
+  
+    walk(tmp, {
+      b: false,
+      i: false,
+      u: false,
+      s: false,
+      textColor: "",
+      bgColor: "",
+    });
+  
     return segments;
   }
 
   function segmentsToHtml(segments) {
     const compact = [];
-
+  
     for (const seg of segments) {
       if (seg.br) {
         compact.push({ br: true });
         continue;
       }
       if (!seg.text) continue;
-
+  
       const prev = compact[compact.length - 1];
       if (prev && !prev.br && sameFmtObject(prev.fmt, seg.fmt)) {
         prev.text += seg.text;
@@ -378,24 +427,33 @@
         });
       }
     }
-
+  
     function wrapTextByFmt(text, fmt) {
       let html = escapeHtml(text || "");
       if (!html) return "";
-
+    
       if (fmt.s) html = `<span class="rt-s">${html}</span>`;
       if (fmt.u) html = `<span class="rt-u">${html}</span>`;
       if (fmt.i) html = `<span class="rt-i">${html}</span>`;
       if (fmt.b) html = `<span class="rt-b">${html}</span>`;
+    
+      if (fmt.textColor) {
+        html = `<span class="rt-color" style="--rt-color:${fmt.textColor};">${html}</span>`;
+      }
+    
+      if (fmt.bgColor) {
+        html = `<span class="rt-bg" style="--rt-bg:${fmt.bgColor};">${html}</span>`;
+      }
+    
       return html;
     }
-
+  
     let out = "";
     for (const seg of compact) {
       if (seg.br) out += "<br>";
       else out += wrapTextByFmt(seg.text, seg.fmt);
     }
-
+  
     return normalizeRichHtml(out).html || "";
   }
 
@@ -464,6 +522,53 @@
       start: Math.min(start, end),
       end: Math.max(start, end),
     };
+  }
+
+  function getCaretFmtInEditor(ed) {
+    const sel = getSelectionOffsetsInEditor(ed);
+    if (!sel) return { b: false, i: false, u: false, s: false };
+  
+    const normalized = normalizeRichHtml(ed.innerHTML || "");
+    const segments = htmlToSegments(
+      normalized.html || escapeHtml(normalized.text || "")
+    );
+  
+    const caret = sel.start;
+    let pos = 0;
+    let lastTextFmt = { b: false, i: false, u: false, s: false };
+  
+    for (const seg of segments) {
+      if (seg.br) {
+        if (caret <= pos) return { ...lastTextFmt };
+        pos += 1;
+        continue;
+      }
+  
+      const text = seg.text || "";
+      const len = text.length;
+      const segStart = pos;
+      const segEnd = pos + len;
+  
+      if (caret >= segStart && caret <= segEnd) {
+        return {
+          b: !!seg.fmt?.b,
+          i: !!seg.fmt?.i,
+          u: !!seg.fmt?.u,
+          s: !!seg.fmt?.s,
+        };
+      }
+  
+      lastTextFmt = {
+        b: !!seg.fmt?.b,
+        i: !!seg.fmt?.i,
+        u: !!seg.fmt?.u,
+        s: !!seg.fmt?.s,
+      };
+  
+      pos = segEnd;
+    }
+  
+    return { ...lastTextFmt };
   }
 
   function setSelectionOffsetsInEditor(ed, start, end) {
@@ -747,13 +852,36 @@
   function unwrapEverywhere(rootEl, cls) {
     rootEl.querySelectorAll(`span.${cls}`).forEach((el) => {
       el.classList.remove(cls);
-
+  
       const stillHasFmt =
         el.classList.contains("rt-b") ||
         el.classList.contains("rt-i") ||
         el.classList.contains("rt-u") ||
-        el.classList.contains("rt-s");
-
+        el.classList.contains("rt-s") ||
+        el.classList.contains("rt-color") ||
+        el.classList.contains("rt-bg");
+  
+      if (cls === "rt-color") {
+        el.style.removeProperty("--rt-color");
+      }
+  
+      if (cls === "rt-bg") {
+        el.style.removeProperty("--rt-bg");
+      }
+  
+      const styleParts = [];
+      const textColor = el.style.getPropertyValue("--rt-color") || "";
+      const bgColor = el.style.getPropertyValue("--rt-bg") || "";
+  
+      if (textColor) styleParts.push(`--rt-color:${textColor}`);
+      if (bgColor) styleParts.push(`--rt-bg:${bgColor}`);
+  
+      if (styleParts.length) {
+        el.setAttribute("style", styleParts.join(";"));
+      } else {
+        el.removeAttribute("style");
+      }
+  
       if (!stillHasFmt) {
         el.replaceWith(...Array.from(el.childNodes));
       }
@@ -871,13 +999,10 @@
           else stateByKey[key] = "none";
         }
       } else {
-        const coverage = getFmtCoverageFromHtml(
-          normalized.html || escapeHtml(normalized.text || ""),
-          normalized.text || ""
-        );
-  
+        const caretFmt = getCaretFmtInEditor(rich);
+      
         for (const key of ["b", "i", "u", "s"]) {
-          stateByKey[key] = coverage[key];
+          stateByKey[key] = caretFmt[key] ? "all" : "none";
         }
       }
   
@@ -1086,22 +1211,46 @@
     const st = document.createElement("style");
     st.id = id;
     st.textContent = `
-      .row .label { display:inline; }
-      .row.fmt-b .label { font-weight:700; }
-      .row.fmt-i .label { font-style:italic; }
-      .row.fmt-u .label { text-decoration:underline; }
-      .row.fmt-s .label { text-decoration:line-through; }
-      .row.fmt-u.fmt-s .label { text-decoration: underline line-through; }
+  .row .label { display:inline; }
+  .row.fmt-b .label { font-weight:700; }
+  .row.fmt-i .label { font-style:italic; }
 
-      .rt-b { font-weight:700; }
-      .rt-i { font-style:italic; }
-      .rt-u { text-decoration:underline; }
-      .rt-s { text-decoration:line-through; }
-      .rt-u.rt-s, .rt-s.rt-u { text-decoration: underline line-through; }
+  .row.fmt-u .label {
+    text-decoration-line: underline;
+    text-decoration-color: currentColor;
+  }
 
-      .fmt-btn.active {
-        outline: 1px solid #000 !important;
-      }
+  .row.fmt-s .label {
+    text-decoration-line: line-through;
+    text-decoration-color: currentColor;
+  }
+
+  .row.fmt-u.fmt-s .label {
+    text-decoration-line: underline line-through;
+    text-decoration-color: currentColor;
+  }
+
+  .rt-b { font-weight:700; }
+  .rt-i { font-style:italic; }
+
+  .rt-u {
+    text-decoration-line: underline;
+    text-decoration-color: currentColor;
+  }
+
+  .rt-s {
+    text-decoration-line: line-through;
+    text-decoration-color: currentColor;
+  }
+
+  .rt-u.rt-s, .rt-s.rt-u {
+    text-decoration-line: underline line-through;
+    text-decoration-color: currentColor;
+  }
+
+  .fmt-btn.active {
+    outline: 1px solid #000 !important;
+  }
     `;
     document.head.appendChild(st);
   })();
@@ -1126,6 +1275,15 @@
     syncFmtMapFromNode,
     toggleWholeHtmlFmt,
   };
+
+  document.addEventListener("selectionchange", () => {
+    const ed = activeRichEditor();
+    if (!ed) return;
+  
+    try {
+      syncButtons();
+    } catch (_) {}
+  });
 
   window.addEventListener("keydown", handleHotkeys, true);
 

@@ -132,6 +132,79 @@
       return html;
     }
   
+    function unwrapColorEverywhere(rootEl, cls) {
+      rootEl.querySelectorAll(`span.${cls}`).forEach((el) => {
+        el.classList.remove(cls);
+    
+        const keepOtherFmt =
+          el.classList.contains("rt-b") ||
+          el.classList.contains("rt-i") ||
+          el.classList.contains("rt-u") ||
+          el.classList.contains("rt-s") ||
+          el.classList.contains("rt-color") ||
+          el.classList.contains("rt-bg");
+    
+        if (cls === "rt-color") {
+          el.style.removeProperty("--rt-color");
+        }
+        if (cls === "rt-bg") {
+          el.style.removeProperty("--rt-bg");
+        }
+    
+        const stillHasColorFmt =
+          el.classList.contains("rt-color") ||
+          el.classList.contains("rt-bg");
+    
+        const stillHasTextFmt =
+          el.classList.contains("rt-b") ||
+          el.classList.contains("rt-i") ||
+          el.classList.contains("rt-u") ||
+          el.classList.contains("rt-s");
+    
+        if (!stillHasColorFmt && !stillHasTextFmt) {
+          el.replaceWith(...Array.from(el.childNodes));
+          return;
+        }
+    
+        const styleParts = [];
+        const color = el.style.getPropertyValue("--rt-color") || "";
+        const bg = el.style.getPropertyValue("--rt-bg") || "";
+    
+        if (color) styleParts.push(`--rt-color:${color}`);
+        if (bg) styleParts.push(`--rt-bg:${bg}`);
+    
+        if (styleParts.length) {
+          el.setAttribute("style", styleParts.join(";"));
+        } else {
+          el.removeAttribute("style");
+        }
+      });
+    }
+    
+    function applyColorToWholeHtmlPreservingFmt(html, text, kind, color) {
+      const baseHtml = normalizeRichHtmlKeepingColor(html || escapeHtml(text || ""));
+      const tmp = document.createElement("div");
+      tmp.innerHTML = baseHtml || escapeHtml(text || "");
+    
+      if (kind === "text") {
+        unwrapColorEverywhere(tmp, "rt-color");
+      } else if (kind === "bg") {
+        unwrapColorEverywhere(tmp, "rt-bg");
+      }
+    
+      let inner = tmp.innerHTML;
+    
+      if (kind === "text" && color) {
+        inner = `<span class="rt-color" style="--rt-color:${color};">${inner}</span>`;
+      }
+    
+      if (kind === "bg" && color) {
+        inner = `<span class="rt-bg" style="--rt-bg:${color};">${inner}</span>`;
+      }
+    
+      return normalizeRichHtmlKeepingColor(inner);
+    }
+
     function normalizeRichHtmlKeepingColor(html) {
       const tmp = document.createElement("div");
       tmp.innerHTML = html || "";
@@ -250,15 +323,25 @@
   
     function applyColorToWholeNode(node, kind, color) {
       if (!node) return false;
-  
+    
       const curFmt = getWholeColorFmtForNode(node);
       const nextFmt = {
         text: kind === "text" ? (color || "") : (curFmt.text || ""),
         bg: kind === "bg" ? (color || "") : (curFmt.bg || ""),
       };
-  
-      const nextHtml = wrapWholeTextWithColorFmt(node.name || "", nextFmt);
-  
+    
+      const baseHtml =
+  window.__fmtSync?.buildRichHtmlFromNode?.(node) ||
+  node.nameHtml ||
+  "";
+
+const nextHtml = applyColorToWholeHtmlPreservingFmt(
+  baseHtml,
+  node.name || "",
+  kind,
+  color || ""
+);
+    
       node.nameHtml = nextHtml || "";
       setColorFmt(node.id, nextFmt);
       return true;

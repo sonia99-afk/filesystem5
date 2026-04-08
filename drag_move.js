@@ -56,6 +56,11 @@
       const label = row.querySelector(":scope > .label");
       const labelRect = label?.getBoundingClientRect() || rect;
 
+      // ВАЖНО:
+      // При включённой нумерации labelRect.left уже уходит вправо,
+      // потому что перед label появляется .ordinal-badge.
+      // Значит same-level зона должна РАСШИРЯТЬСЯ вправо,
+      // а не сдвигаться целиком.
       const sameLevelStartX = rect.left - SAME_LEVEL_LEFT_OFFSET_PX;
       const sameLevelEndX =
         labelRect.left + SAME_LEVEL_TO_CHILD_BOUNDARY_SHIFT_PX;
@@ -352,6 +357,10 @@
     const label = row.querySelector(":scope > .label");
     const labelRect = label?.getBoundingClientRect() || rowRect;
 
+    // ВАЖНО:
+    // При нумерации правая граница same-level зоны уже уезжает вправо
+    // вслед за labelRect.left. Значит левую границу не двигаем,
+    // чтобы получить расширение зоны, а не её сдвиг.
     const sameLevelStartX = rowRect.left - SAME_LEVEL_LEFT_OFFSET_PX;
     const sameLevelEndX =
       labelRect.left + SAME_LEVEL_TO_CHILD_BOUNDARY_SHIFT_PX;
