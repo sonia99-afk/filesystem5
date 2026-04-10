@@ -44,6 +44,75 @@
       .replace(/'/g, "&#39;");
   }
 
+  function normalizeRichHtmlPreservingColor(html) {
+    if (window.__colorFmtSync?.normalizeRichHtmlKeepingColor) {
+      return window.__colorFmtSync.normalizeRichHtmlKeepingColor(html || "");
+    }
+
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html || "";
+
+    function sanitizeElement(el) {
+      const tag = (el.tagName || "").toLowerCase();
+
+      if (tag === "span") {
+        const keep =
+          el.classList.contains("rt-b") ||
+          el.classList.contains("rt-i") ||
+          el.classList.contains("rt-u") ||
+          el.classList.contains("rt-s") ||
+          el.classList.contains("rt-color") ||
+          el.classList.contains("rt-bg");
+
+        if (!keep) {
+          el.replaceWith(...Array.from(el.childNodes));
+          return;
+        }
+
+        const styleParts = [];
+        if (el.classList.contains("rt-color")) {
+          const color = el.style.getPropertyValue("--rt-color") || "";
+          if (color) styleParts.push(`--rt-color:${color}`);
+        }
+        if (el.classList.contains("rt-bg")) {
+          const bg = el.style.getPropertyValue("--rt-bg") || "";
+          if (bg) styleParts.push(`--rt-bg:${bg}`);
+        }
+
+        if (styleParts.length) {
+          el.setAttribute("style", styleParts.join(";"));
+        } else {
+          el.removeAttribute("style");
+        }
+        return;
+      }
+
+      if (tag === "br") return;
+      if (
+        tag === "b" || tag === "strong" ||
+        tag === "i" || tag === "em" ||
+        tag === "u" ||
+        tag === "s" || tag === "strike" || tag === "del"
+      ) {
+        return;
+      }
+
+      el.replaceWith(...Array.from(el.childNodes));
+    }
+
+    function walk(node) {
+      for (const ch of Array.from(node.childNodes)) {
+        if (ch.nodeType === Node.ELEMENT_NODE) {
+          walk(ch);
+          sanitizeElement(ch);
+        }
+      }
+    }
+
+    walk(tmp);
+    return tmp.innerHTML;
+  }
+
   function host() {
     return document.getElementById("tree");
   }
@@ -82,12 +151,10 @@
   function activeRichEditor() {
     const ae = document.activeElement;
     if (!ae) return null;
-  
+
     if (ae.classList?.contains("edit-rich")) return ae;
-  
-    // 🔥 ДОБАВИТЬ ЭТО
     if (ae.classList?.contains("edit-caption")) return ae;
-  
+
     return null;
   }
 
@@ -134,83 +201,83 @@
   function normalizeRichHtml(html) {
     const tmp = document.createElement("div");
     tmp.innerHTML = html || "";
-  
+
     const SEG_BR = { __br: true };
-  
+
     function escapeText(s) {
       return String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
     }
-  
+
     function cloneLocalFmt(fmt) {
       return {
-        b: !!fmt?.b,
-        i: !!fmt?.i,
-        u: !!fmt?.u,
-        s: !!fmt?.s,
-        textColor: fmt?.textColor || "",
-        bgColor: fmt?.bgColor || "",
+        b: !!fmt.b,
+        i: !!fmt.i,
+        u: !!fmt.u,
+        s: !!fmt.s,
+        text: fmt.text || "",
+        bg: fmt.bg || "",
       };
     }
-  
+
     function sameFmt(a, b) {
       return !!a && !!b &&
         !!a.b === !!b.b &&
         !!a.i === !!b.i &&
         !!a.u === !!b.u &&
         !!a.s === !!b.s &&
-        String(a.textColor || "") === String(b.textColor || "") &&
-        String(a.bgColor || "") === String(b.bgColor || "");
+        String(a.text || "") === String(b.text || "") &&
+        String(a.bg || "") === String(b.bg || "");
     }
-  
+
     function applyElementFmt(el, parentFmt) {
       const fmt = cloneLocalFmt(parentFmt);
       const tag = (el.tagName || "").toLowerCase();
-  
+
       if (tag === "b" || tag === "strong") fmt.b = true;
       if (tag === "i" || tag === "em") fmt.i = true;
       if (tag === "u") fmt.u = true;
       if (tag === "s" || tag === "strike" || tag === "del") fmt.s = true;
-  
+
       if (el.classList?.contains("rt-b")) fmt.b = true;
       if (el.classList?.contains("rt-i")) fmt.i = true;
       if (el.classList?.contains("rt-u")) fmt.u = true;
       if (el.classList?.contains("rt-s")) fmt.s = true;
-  
+
       if (el.classList?.contains("rt-color")) {
-        fmt.textColor = el.style.getPropertyValue("--rt-color")?.trim() || "";
+        fmt.text = el.style?.getPropertyValue("--rt-color") || "";
       }
-  
+
       if (el.classList?.contains("rt-bg")) {
-        fmt.bgColor = el.style.getPropertyValue("--rt-bg")?.trim() || "";
+        fmt.bg = el.style?.getPropertyValue("--rt-bg") || "";
       }
-  
+
       const style = String(el.getAttribute("style") || "").toLowerCase();
-  
+
       if (/font-weight\s*:\s*(normal|400)\b/.test(style)) fmt.b = false;
       if (/font-weight\s*:\s*(bold|[5-9]00)\b/.test(style)) fmt.b = true;
-  
+
       if (/font-style\s*:\s*normal\b/.test(style)) fmt.i = false;
       if (/font-style\s*:\s*(italic|oblique)\b/.test(style)) fmt.i = true;
-  
+
       if (/text-decoration(-line)?\s*:\s*none\b/.test(style)) {
         fmt.u = false;
         fmt.s = false;
       }
-  
+
       if (/text-decoration[^:]*:\s*[^;]*underline/.test(style)) fmt.u = true;
       if (/text-decoration[^:]*:\s*[^;]*(line-through|strike)/.test(style)) fmt.s = true;
-  
+
       if (/text-decoration[^:]*:\s*[^;]*\bno-underline\b/.test(style)) fmt.u = false;
       if (/text-decoration[^:]*:\s*[^;]*\bno-line-through\b/.test(style)) fmt.s = false;
-  
+
       return fmt;
     }
-  
+
     const segments = [];
-  
+
     function pushText(text, fmt) {
       if (!text) return;
       const prev = segments[segments.length - 1];
@@ -220,37 +287,30 @@
         segments.push({ text, fmt: cloneLocalFmt(fmt) });
       }
     }
-  
+
     function walk(node, inheritedFmt) {
       for (const ch of Array.from(node.childNodes)) {
         if (ch.nodeType === Node.TEXT_NODE) {
           pushText(ch.nodeValue || "", inheritedFmt);
           continue;
         }
-  
+
         if (ch.nodeType !== Node.ELEMENT_NODE) continue;
-  
+
         const tag = ch.tagName.toLowerCase();
-  
+
         if (tag === "br") {
           segments.push(SEG_BR);
           continue;
         }
-  
+
         const nextFmt = applyElementFmt(ch, inheritedFmt);
         walk(ch, nextFmt);
       }
     }
-  
-    walk(tmp, {
-      b: false,
-      i: false,
-      u: false,
-      s: false,
-      textColor: "",
-      bgColor: "",
-    });
-  
+
+    walk(tmp, { b: false, i: false, u: false, s: false, text: "", bg: "" });
+
     function wrapTextByFmt(text, fmt) {
       let html = escapeText(text);
       if (!html) return "";
@@ -260,33 +320,32 @@
       if (fmt.i) html = `<span class="rt-i">${html}</span>`;
       if (fmt.b) html = `<span class="rt-b">${html}</span>`;
     
-      if (fmt.textColor) {
-        html = `<span class="rt-color" style="--rt-color:${fmt.textColor};">${html}</span>`;
+      if (fmt.text) {
+        html = `<span class="rt-color" style="--rt-color:${fmt.text};">${html}</span>`;
       }
     
-      if (fmt.bgColor) {
-        html = `<span class="rt-bg" style="--rt-bg:${fmt.bgColor};">${html}</span>`;
+      if (fmt.bg) {
+        html = `<span class="rt-bg" style="--rt-bg:${fmt.bg};">${html}</span>`;
       }
     
       return html;
     }
-  
+
     let out = "";
     let plain = "";
-  
+
     for (const seg of segments) {
       if (seg.__br) {
         out += "<br>";
         plain += "\n";
         continue;
       }
-  
+
       out += wrapTextByFmt(seg.text, seg.fmt);
       plain += seg.text;
     }
-  
+
     const hasFmt = /class="rt-(b|i|u|s|color|bg)"/.test(out);
-  
     return {
       html: hasFmt ? out : "",
       text: plain,
@@ -299,8 +358,8 @@
       i: !!fmt?.i,
       u: !!fmt?.u,
       s: !!fmt?.s,
-      textColor: fmt?.textColor || "",
-      bgColor: fmt?.bgColor || "",
+      text: fmt?.text || "",
+      bg: fmt?.bg || "",
     };
   }
 
@@ -310,58 +369,58 @@
       !!a.i === !!b.i &&
       !!a.u === !!b.u &&
       !!a.s === !!b.s &&
-      String(a.textColor || "") === String(b.textColor || "") &&
-      String(a.bgColor || "") === String(b.bgColor || "");
+      String(a.text || "") === String(b.text || "") &&
+      String(a.bg || "") === String(b.bg || "");
   }
 
   function htmlToSegments(html) {
-    const normalized = normalizeRichHtml(html || "");
+    const normalized = normalizeRichHtmlPreservingColor(html || "");
     const tmp = document.createElement("div");
-    tmp.innerHTML = normalized.html || escapeHtml(normalized.text || "");
-  
+    tmp.innerHTML = normalized || escapeHtml("");
+
     const segments = [];
-  
+
     function applyElementFmt(el, parentFmt) {
       const fmt = cloneFmtObject(parentFmt);
       const tag = (el.tagName || "").toLowerCase();
-  
+
       if (tag === "b" || tag === "strong") fmt.b = true;
       if (tag === "i" || tag === "em") fmt.i = true;
       if (tag === "u") fmt.u = true;
       if (tag === "s" || tag === "strike" || tag === "del") fmt.s = true;
-  
+
       if (el.classList?.contains("rt-b")) fmt.b = true;
       if (el.classList?.contains("rt-i")) fmt.i = true;
       if (el.classList?.contains("rt-u")) fmt.u = true;
       if (el.classList?.contains("rt-s")) fmt.s = true;
-  
+
       if (el.classList?.contains("rt-color")) {
-        fmt.textColor = el.style.getPropertyValue("--rt-color")?.trim() || "";
+        fmt.text = el.style?.getPropertyValue("--rt-color") || "";
       }
-  
+
       if (el.classList?.contains("rt-bg")) {
-        fmt.bgColor = el.style.getPropertyValue("--rt-bg")?.trim() || "";
+        fmt.bg = el.style?.getPropertyValue("--rt-bg") || "";
       }
-  
+
       const style = String(el.getAttribute("style") || "").toLowerCase();
-  
+
       if (/font-weight\s*:\s*(normal|400)\b/.test(style)) fmt.b = false;
       if (/font-weight\s*:\s*(bold|[5-9]00)\b/.test(style)) fmt.b = true;
-  
+
       if (/font-style\s*:\s*normal\b/.test(style)) fmt.i = false;
       if (/font-style\s*:\s*(italic|oblique)\b/.test(style)) fmt.i = true;
-  
+
       if (/text-decoration(-line)?\s*:\s*none\b/.test(style)) {
         fmt.u = false;
         fmt.s = false;
       }
-  
+
       if (/text-decoration[^:]*:\s*[^;]*underline/.test(style)) fmt.u = true;
       if (/text-decoration[^:]*:\s*[^;]*(line-through|strike)/.test(style)) fmt.s = true;
-  
+
       return fmt;
     }
-  
+
     function pushText(text, fmt) {
       if (!text) return;
       const prev = segments[segments.length - 1];
@@ -374,49 +433,41 @@
         });
       }
     }
-  
+
     function walk(node, inheritedFmt) {
       for (const ch of Array.from(node.childNodes)) {
         if (ch.nodeType === Node.TEXT_NODE) {
           pushText(ch.nodeValue || "", inheritedFmt);
           continue;
         }
-  
+
         if (ch.nodeType !== Node.ELEMENT_NODE) continue;
-  
+
         const tag = ch.tagName.toLowerCase();
         if (tag === "br") {
           segments.push({ br: true });
           continue;
         }
-  
+
         const nextFmt = applyElementFmt(ch, inheritedFmt);
         walk(ch, nextFmt);
       }
     }
-  
-    walk(tmp, {
-      b: false,
-      i: false,
-      u: false,
-      s: false,
-      textColor: "",
-      bgColor: "",
-    });
-  
+
+    walk(tmp, { b: false, i: false, u: false, s: false, text: "", bg: "" });
     return segments;
   }
 
   function segmentsToHtml(segments) {
     const compact = [];
-  
+
     for (const seg of segments) {
       if (seg.br) {
         compact.push({ br: true });
         continue;
       }
       if (!seg.text) continue;
-  
+
       const prev = compact[compact.length - 1];
       if (prev && !prev.br && sameFmtObject(prev.fmt, seg.fmt)) {
         prev.text += seg.text;
@@ -427,7 +478,7 @@
         });
       }
     }
-  
+
     function wrapTextByFmt(text, fmt) {
       let html = escapeHtml(text || "");
       if (!html) return "";
@@ -437,24 +488,24 @@
       if (fmt.i) html = `<span class="rt-i">${html}</span>`;
       if (fmt.b) html = `<span class="rt-b">${html}</span>`;
     
-      if (fmt.textColor) {
-        html = `<span class="rt-color" style="--rt-color:${fmt.textColor};">${html}</span>`;
+      if (fmt.text) {
+        html = `<span class="rt-color" style="--rt-color:${fmt.text};">${html}</span>`;
       }
     
-      if (fmt.bgColor) {
-        html = `<span class="rt-bg" style="--rt-bg:${fmt.bgColor};">${html}</span>`;
+      if (fmt.bg) {
+        html = `<span class="rt-bg" style="--rt-bg:${fmt.bg};">${html}</span>`;
       }
     
       return html;
     }
-  
+
     let out = "";
     for (const seg of compact) {
       if (seg.br) out += "<br>";
       else out += wrapTextByFmt(seg.text, seg.fmt);
     }
-  
-    return normalizeRichHtml(out).html || "";
+
+    return normalizeRichHtmlPreservingColor(out) || "";
   }
 
   function getSelectionOffsetsInEditor(ed) {
@@ -527,28 +578,26 @@
   function getCaretFmtInEditor(ed) {
     const sel = getSelectionOffsetsInEditor(ed);
     if (!sel) return { b: false, i: false, u: false, s: false };
-  
-    const normalized = normalizeRichHtml(ed.innerHTML || "");
-    const segments = htmlToSegments(
-      normalized.html || escapeHtml(normalized.text || "")
-    );
-  
+
+    const normalizedHtml = normalizeRichHtmlPreservingColor(ed.innerHTML || "");
+    const segments = htmlToSegments(normalizedHtml || "");
+
     const caret = sel.start;
     let pos = 0;
     let lastTextFmt = { b: false, i: false, u: false, s: false };
-  
+
     for (const seg of segments) {
       if (seg.br) {
         if (caret <= pos) return { ...lastTextFmt };
         pos += 1;
         continue;
       }
-  
+
       const text = seg.text || "";
       const len = text.length;
       const segStart = pos;
       const segEnd = pos + len;
-  
+
       if (caret >= segStart && caret <= segEnd) {
         return {
           b: !!seg.fmt?.b,
@@ -557,17 +606,17 @@
           s: !!seg.fmt?.s,
         };
       }
-  
+
       lastTextFmt = {
         b: !!seg.fmt?.b,
         i: !!seg.fmt?.i,
         u: !!seg.fmt?.u,
         s: !!seg.fmt?.s,
       };
-  
+
       pos = segEnd;
     }
-  
+
     return { ...lastTextFmt };
   }
 
@@ -633,69 +682,66 @@
     const sel = getSelectionOffsetsInEditor(ed);
     if (!sel) return;
     if (sel.start === sel.end) return;
-  
-    const current = normalizeRichHtml(ed.innerHTML || "");
-    const segments = htmlToSegments(current.html || escapeHtml(current.text || ""));
-  
+
+    const currentHtml = normalizeRichHtmlPreservingColor(ed.innerHTML || "");
+    const segments = htmlToSegments(currentHtml || "");
+
     let pos = 0;
     let hasSelectedText = false;
     let selectedHasOn = false;
     let selectedHasOff = false;
-  
+
     for (const seg of segments) {
       if (seg.br) {
         pos += 1;
         continue;
       }
-  
+
       const text = seg.text || "";
       const len = text.length;
       const segStart = pos;
       const segEnd = pos + len;
-  
+
       const from = Math.max(segStart, sel.start);
       const to = Math.min(segEnd, sel.end);
-  
+
       if (from < to) {
         hasSelectedText = true;
-  
+
         if (seg.fmt?.[key]) {
           selectedHasOn = true;
         } else {
           selectedHasOff = true;
         }
-  
+
         if (selectedHasOn && selectedHasOff) break;
       }
-  
+
       pos = segEnd;
     }
-  
+
     if (!hasSelectedText) return;
-  
-    // none  -> включаем
-    // all   -> снимаем
-    // mixed -> тоже снимаем
+
     const turnOn = !selectedHasOn;
-  
+
     const next = [];
     pos = 0;
-  
+
     for (const seg of segments) {
       if (seg.br) {
         next.push({ br: true });
         pos += 1;
         continue;
       }
-  
+
       const text = seg.text || "";
       const len = text.length;
       const segStart = pos;
       const segEnd = pos + len;
-  
+
       const from = Math.max(segStart, sel.start);
       const to = Math.min(segEnd, sel.end);
-  
+
       if (from >= to) {
         next.push({
           text,
@@ -704,39 +750,39 @@
         pos = segEnd;
         continue;
       }
-  
+
       const leftLen = from - segStart;
       const midLen = to - from;
       const rightLen = segEnd - to;
-  
+
       if (leftLen > 0) {
         next.push({
           text: text.slice(0, leftLen),
           fmt: cloneFmtObject(seg.fmt),
         });
       }
-  
+
       if (midLen > 0) {
         const midFmt = cloneFmtObject(seg.fmt);
         midFmt[key] = turnOn;
-  
+
         next.push({
           text: text.slice(leftLen, leftLen + midLen),
           fmt: midFmt,
         });
       }
-  
+
       if (rightLen > 0) {
         next.push({
           text: text.slice(len - rightLen),
           fmt: cloneFmtObject(seg.fmt),
         });
       }
-  
+
       pos = segEnd;
     }
-  
-    const nextHtml = segmentsToHtml(next) || escapeHtml(current.text || "");
+
+    const nextHtml = segmentsToHtml(next) || currentHtml || "";
     ed.innerHTML = nextHtml;
     setSelectionOffsetsInEditor(ed, sel.start, sel.end);
   }
@@ -839,7 +885,16 @@
     if (!node?.id) return emptyFmt();
 
     if (node.nameHtml) {
-      const fmt = detectWholeNodeFmtFromHtml(node.nameHtml, node.name || "");
+      const prev = getFmt(node.id);
+      const coverage = getFmtCoverageFromHtml(node.nameHtml, node.name || "");
+
+      const fmt = {
+        b: prev.b ? coverage.b !== "none" : coverage.b === "all",
+        i: prev.i ? coverage.i !== "none" : coverage.i === "all",
+        u: prev.u ? coverage.u !== "none" : coverage.u === "all",
+        s: prev.s ? coverage.s !== "none" : coverage.s === "all",
+      };
+
       setFmt(node.id, fmt);
       return fmt;
     }
@@ -852,7 +907,7 @@
   function unwrapEverywhere(rootEl, cls) {
     rootEl.querySelectorAll(`span.${cls}`).forEach((el) => {
       el.classList.remove(cls);
-  
+
       const stillHasFmt =
         el.classList.contains("rt-b") ||
         el.classList.contains("rt-i") ||
@@ -860,30 +915,23 @@
         el.classList.contains("rt-s") ||
         el.classList.contains("rt-color") ||
         el.classList.contains("rt-bg");
-  
-      if (cls === "rt-color") {
-        el.style.removeProperty("--rt-color");
+
+      if (!stillHasFmt) {
+        el.replaceWith(...Array.from(el.childNodes));
+        return;
       }
-  
-      if (cls === "rt-bg") {
-        el.style.removeProperty("--rt-bg");
-      }
-  
+
       const styleParts = [];
-      const textColor = el.style.getPropertyValue("--rt-color") || "";
-      const bgColor = el.style.getPropertyValue("--rt-bg") || "";
-  
-      if (textColor) styleParts.push(`--rt-color:${textColor}`);
-      if (bgColor) styleParts.push(`--rt-bg:${bgColor}`);
-  
+      const color = el.style.getPropertyValue("--rt-color") || "";
+      const bg = el.style.getPropertyValue("--rt-bg") || "";
+
+      if (color) styleParts.push(`--rt-color:${color}`);
+      if (bg) styleParts.push(`--rt-bg:${bg}`);
+
       if (styleParts.length) {
         el.setAttribute("style", styleParts.join(";"));
       } else {
         el.removeAttribute("style");
-      }
-  
-      if (!stillHasFmt) {
-        el.replaceWith(...Array.from(el.childNodes));
       }
     });
   }
@@ -942,57 +990,55 @@
       ["fmtUnderline", "u"],
       ["fmtStrike", "s"],
     ];
-  
+
     const rich = activeRichEditor();
-  
+
     if (rich) {
       const sel = getSelectionOffsetsInEditor(rich);
-      const normalized = normalizeRichHtml(rich.innerHTML || "");
-      const segments = htmlToSegments(
-        normalized.html || escapeHtml(normalized.text || "")
-      );
-  
+      const normalizedHtml = normalizeRichHtmlPreservingColor(rich.innerHTML || "");
+      const segments = htmlToSegments(normalizedHtml || "");
+
       const stateByKey = {
         b: "none",
         i: "none",
         u: "none",
         s: "none",
       };
-  
+
       if (sel && sel.start !== sel.end) {
         let pos = 0;
-  
+
         const acc = {
           b: { on: false, off: false },
           i: { on: false, off: false },
           u: { on: false, off: false },
           s: { on: false, off: false },
         };
-  
+
         for (const seg of segments) {
           if (seg.br) {
             pos += 1;
             continue;
           }
-  
+
           const text = seg.text || "";
           const len = text.length;
           const segStart = pos;
           const segEnd = pos + len;
-  
+
           const from = Math.max(segStart, sel.start);
           const to = Math.min(segEnd, sel.end);
-  
+
           if (from < to) {
             for (const key of ["b", "i", "u", "s"]) {
               if (seg.fmt?.[key]) acc[key].on = true;
               else acc[key].off = true;
             }
           }
-  
+
           pos = segEnd;
         }
-  
+
         for (const key of ["b", "i", "u", "s"]) {
           if (acc[key].on && acc[key].off) stateByKey[key] = "some";
           else if (acc[key].on) stateByKey[key] = "all";
@@ -1000,30 +1046,28 @@
         }
       } else {
         const caretFmt = getCaretFmtInEditor(rich);
-      
+
         for (const key of ["b", "i", "u", "s"]) {
           stateByKey[key] = caretFmt[key] ? "all" : "none";
         }
       }
-  
+
       for (const [btnId, key] of ids) {
         const btn = document.getElementById(btnId);
         if (!btn) continue;
-  
-        // Кнопка активна только для своего собственного состояния.
-        // "some" тоже считаем активным, но только у этой кнопки.
+
         const active = stateByKey[key] === "all" || stateByKey[key] === "some";
         btn.classList.toggle("active", active);
       }
-  
+
       return;
     }
-  
+
     const rows = getTargetRows();
     const row = rows[0];
     const id = row?.dataset?.id;
     const fmt = id ? getFmt(id) : emptyFmt();
-  
+
     for (const [btnId, key] of ids) {
       const btn = document.getElementById(btnId);
       if (!btn) continue;
@@ -1058,7 +1102,25 @@
       if (!node) continue;
 
       if (node.nameHtml) {
-        const next = toggleWholeHtmlFmt(node.nameHtml, node.name || "", key);
+        let next;
+
+        const currentFmt = getFmt(id);
+        const cls = KEY_TO_CLASS[key];
+
+        if (currentFmt[key]) {
+          const normalized = normalizeRichHtml(
+            node.nameHtml || escapeHtml(node.name || "")
+          );
+
+          const tmp = document.createElement("div");
+          tmp.innerHTML = normalized.html || escapeHtml(normalized.text || "");
+
+          unwrapEverywhere(tmp, cls);
+          next = normalizeRichHtml(tmp.innerHTML);
+        } else {
+          next = toggleWholeHtmlFmt(node.nameHtml, node.name || "", key);
+        }
+
         const changedHtml = (next.html || "") !== (node.nameHtml || "");
         const changedText = (next.text || "") !== (node.name || "");
 
@@ -1120,83 +1182,80 @@
 
   function handleHotkeys(e) {
     if (window.hotkeysMode === "custom") return;
-  
+
     const rich = activeRichEditor();
     const inRich = !!rich;
-  
+
     const stop = () => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation?.();
     };
-  
-    // В режиме переименования / редактирования подписи
-    // НЕ используем window.isHotkey(), потому что он отключается в contentEditable
+
     if (inRich) {
       const normalize = window.hotkeys?.normalizeCombo;
-  
+
       const haveRaw =
         typeof comboFromKeyEvent === "function"
           ? comboFromKeyEvent(e)
           : "";
-  
+
       const have = normalize ? normalize(haveRaw) : haveRaw;
       if (!have) return;
-  
+
       const matches = (action) => {
         const wantRaw = window.hotkeys?.get?.(action) || "";
         const want = normalize ? normalize(wantRaw) : wantRaw;
         return !!want && have === want;
       };
-  
+
       if (matches("bold")) {
         stop();
         applyInlineFmt("b");
         return;
       }
-  
+
       if (matches("italic")) {
         stop();
         applyInlineFmt("i");
         return;
       }
-  
+
       if (matches("underline")) {
         stop();
         applyInlineFmt("u");
         return;
       }
-  
+
       if (matches("strike")) {
         stop();
         applyInlineFmt("s");
         return;
       }
-  
+
       return;
     }
-  
-    // В обычном режиме оставляем старую логику дерева
+
     if (typeof window.isHotkey !== "function") return;
-  
+
     if (window.isHotkey(e, "bold")) {
       stop();
       toggleOnTargets("b");
       return;
     }
-  
+
     if (window.isHotkey(e, "italic")) {
       stop();
       toggleOnTargets("i");
       return;
     }
-  
+
     if (window.isHotkey(e, "underline")) {
       stop();
       toggleOnTargets("u");
       return;
     }
-  
+
     if (window.isHotkey(e, "strike")) {
       stop();
       toggleOnTargets("s");
@@ -1211,52 +1270,25 @@
     const st = document.createElement("style");
     st.id = id;
     st.textContent = `
-  .row .label { display:inline; }
-  .row.fmt-b .label { font-weight:700; }
-  .row.fmt-i .label { font-style:italic; }
+      .row .label { display:inline; }
+      .row.fmt-b .label { font-weight:700; }
+      .row.fmt-i .label { font-style:italic; }
+      .row.fmt-u .label { text-decoration:underline; }
+      .row.fmt-s .label { text-decoration:line-through; }
+      .row.fmt-u.fmt-s .label { text-decoration: underline line-through; }
 
-  .row.fmt-u .label {
-    text-decoration-line: underline;
-    text-decoration-color: currentColor;
-  }
+      .rt-b { font-weight:700; }
+      .rt-i { font-style:italic; }
+      .rt-u { text-decoration:underline; }
+      .rt-s { text-decoration:line-through; }
+      .rt-u.rt-s, .rt-s.rt-u { text-decoration: underline line-through; }
 
-  .row.fmt-s .label {
-    text-decoration-line: line-through;
-    text-decoration-color: currentColor;
-  }
-
-  .row.fmt-u.fmt-s .label {
-    text-decoration-line: underline line-through;
-    text-decoration-color: currentColor;
-  }
-
-  .rt-b { font-weight:700; }
-  .rt-i { font-style:italic; }
-
-  .rt-u {
-    text-decoration-line: underline;
-    text-decoration-color: currentColor;
-  }
-
-  .rt-s {
-    text-decoration-line: line-through;
-    text-decoration-color: currentColor;
-  }
-
-  .rt-u.rt-s, .rt-s.rt-u {
-    text-decoration-line: underline line-through;
-    text-decoration-color: currentColor;
-  }
-
-  .fmt-btn.active {
-    outline: 1px solid #000 !important;
-  }
+      .fmt-btn.active {
+        outline: 1px solid #000 !important;
+      }
     `;
     document.head.appendChild(st);
   })();
-
-  
-
 
   bindButton("fmtBold", "b");
   bindButton("fmtItalic", "i");
@@ -1279,7 +1311,7 @@
   document.addEventListener("selectionchange", () => {
     const ed = activeRichEditor();
     if (!ed) return;
-  
+
     try {
       syncButtons();
     } catch (_) {}
