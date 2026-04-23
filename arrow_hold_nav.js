@@ -4,7 +4,7 @@
   const REPEAT_MS = 60;
 
   let heldCode = null;     // ArrowUp/Down/Left/Right
-  let heldAction = null;   // navUp/navDown/navLeft/navRight/moveUp/moveDown/indent/outdent/rangeUp/rangeDown/deepUp/deepDown
+  let heldAction = null;   
   let tStart = null;
   let tRepeat = null;
 
@@ -50,11 +50,38 @@
       case "navLeft":  return (typeof goParent === "function") ? goParent(selectedId) : undefined;
       case "navRight": return (typeof goDeeper === "function") ? goDeeper(selectedId) : undefined;
 
-      case "moveUp":   return (typeof moveWithinParent === "function") ? moveWithinParent(-1) : undefined;
-      case "moveDown": return (typeof moveWithinParent === "function") ? moveWithinParent(+1) : undefined;
+      case "moveUp":   return (typeof moveByVisibleOrder === "function") ? moveByVisibleOrder(-1) : undefined;
+      case "moveDown": return (typeof moveByVisibleOrder === "function") ? moveByVisibleOrder(+1) : undefined;
 
-      case "indent":   return (typeof indentNode === "function") ? indentNode(selectedId) : undefined;
-      case "outdent":  return (typeof outdentNode === "function") ? outdentNode(selectedId) : undefined;
+      case "levelNavUp":
+        return window.levelNav?.up?.();
+
+      case "levelNavDown":
+        return window.levelNav?.down?.();
+
+        case "branchNavLeft":
+          return window.branchNav?.left?.();
+
+        case "branchNavRight":
+          return window.branchNav?.right?.();
+
+        case "levelMoveUp":
+          return window.levelMove?.up?.();
+
+        case "levelMoveDown":
+          return window.levelMove?.down?.();
+
+          case "branchMoveLeft":
+            return window.branchMove?.left?.();
+
+          case "branchMoveRight":
+            return window.branchMove?.right?.();
+
+            case "branchRangeLeft":
+  return window.multiSelectBranch?.handleBranchRangeKey?.(-1);
+
+case "branchRangeRight":
+  return window.multiSelectBranch?.handleBranchRangeKey?.(+1);
     }
   }
 
@@ -96,6 +123,16 @@
     if (isHotkey(e, "outdent"))   return "outdent";
     if (isHotkey(e, "moveUp"))    return "moveUp";
     if (isHotkey(e, "moveDown"))  return "moveDown";
+    if (isHotkey(e, "levelNavUp"))   return "levelNavUp";
+    if (isHotkey(e, "levelNavDown")) return "levelNavDown";
+    if (isHotkey(e, "branchNavLeft"))  return "branchNavLeft";
+    if (isHotkey(e, "branchNavRight")) return "branchNavRight";
+    if (isHotkey(e, "levelMoveUp"))   return "levelMoveUp";
+    if (isHotkey(e, "levelMoveDown")) return "levelMoveDown";
+    if (isHotkey(e, "branchMoveLeft"))  return "branchMoveLeft";
+    if (isHotkey(e, "branchMoveRight")) return "branchMoveRight";
+    if (isHotkey(e, "branchRangeLeft"))  return "branchRangeLeft";
+if (isHotkey(e, "branchRangeRight")) return "branchRangeRight";
     if (isHotkey(e, "navLeft"))   return "navLeft";
     if (isHotkey(e, "navRight"))  return "navRight";
     if (isHotkey(e, "navUp"))     return "navUp";

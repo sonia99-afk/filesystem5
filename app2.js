@@ -478,6 +478,154 @@ function moveWithinParent(dir) {
   render();
 }
 
+function collectSubtreeIds(node) {
+  const out = [];
+
+  (function walk(n) {
+    out.push(n.id);
+    for (const ch of (n.children || [])) walk(ch);
+  })(node);
+
+  return out;
+}
+
+function moveNodeRelativeToTarget(id, targetId, insertMode) {
+  if (!id || !targetId) return false;
+  if (id === root.id) return false;
+  if (id === targetId) return false;
+  if (insertMode !== "before" && insertMode !== "after") return false;
+
+  const movingInfo = findWithParent(root, id);
+  const targetInfo = findWithParent(root, targetId);
+
+  if (!movingInfo || !targetInfo) return false;
+  if (!movingInfo.parent) return false;
+
+  // нельзя вставить относительно собственного потомка
+  let cur = targetId;
+  while (cur) {
+    const p = parentOf(cur);
+    if (!p) break;
+    if (p === id) return false;
+    cur = p;
+  }
+
+  const wasDefault =
+    String(movingInfo.node.name || "").trim() ===
+    String(DEFAULT_NAME[movingInfo.node.level] || "").trim();
+
+  pushHistory();
+
+  // удаляем из старого родителя
+  movingInfo.parent.children = (movingInfo.parent.children || []).filter(
+    (n) => n.id !== id
+  );
+
+  // после удаления ищем target заново
+  const freshTarget = findWithParent(root, targetId);
+  if (!freshTarget || !freshTarget.parent) {
+    undo();
+    return false;
+  }
+
+  const destinationParent = freshTarget.parent;
+  destinationParent.children ||= [];
+
+  const targetIdx = destinationParent.children.findIndex((n) => n.id === targetId);
+  if (targetIdx < 0) {
+    undo();
+    return false;
+  }
+
+  const insertAt = insertMode === "before" ? targetIdx : targetIdx + 1;
+  const newLevel = freshTarget.node.level;
+  const delta = newLevel - movingInfo.node.level;
+
+  if (delta !== 0) {
+    if (typeof shiftSubtreeLevel === "function") {
+      const ok = shiftSubtreeLevel(movingInfo.node, delta);
+      if (!ok) {
+        undo();
+        return false;
+      }
+    } else {
+      movingInfo.node.level = newLevel;
+    }
+  }
+
+  if (wasDefault) {
+    const def = DEFAULT_NAME[movingInfo.node.level];
+    if (def) movingInfo.node.name = def;
+  }
+
+  destinationParent.children.splice(insertAt, 0, movingInfo.node);
+
+  selectedId = id;
+  treeHasFocus = true;
+  render();
+  return true;
+}
+
+function moveByVisibleOrder(dir) {
+  if (!selectedId) return false;
+  if (selectedId === root.id) return false;
+  if (dir !== -1 && dir !== 1) return false;
+
+  const flat = flatten();
+  const idx = flat.indexOf(selectedId);
+  if (idx < 0) return false;
+
+  if (dir === -1) {
+    const prevId = flat[idx - 1];
+    if (!prevId) return false;
+    return moveNodeRelativeToTarget(selectedId, prevId, "before");
+  }
+
+  // Вниз: игнорируем собственное поддерево
+  let nextId = null;
+
+  for (let i = idx + 1; i < flat.length; i++) {
+    const candidateId = flat[i];
+
+    let cur = candidateId;
+    let isDescendant = false;
+
+    while (cur) {
+      const p = parentOf(cur);
+      if (!p) break;
+      if (p === selectedId) {
+        isDescendant = true;
+        break;
+      }
+      cur = p;
+    }
+
+    if (!isDescendant) {
+      nextId = candidateId;
+      break;
+    }
+  }
+
+  if (!nextId) return false;
+
+  const nextInfo = findWithParent(root, nextId);
+  if (!nextInfo) return false;
+
+  const nextChildren = Array.isArray(nextInfo.node.children)
+    ? nextInfo.node.children
+    : [];
+
+  // Если у следующего невложенного элемента есть дети —
+  // встаём на уровень его детей первым
+  if (nextChildren.length > 0) {
+    const firstChildId = nextChildren[0].id;
+    return moveNodeRelativeToTarget(selectedId, firstChildId, "before");
+  }
+
+  // Иначе просто после него
+  return moveNodeRelativeToTarget(selectedId, nextId, "after");
+}
+
 function indentNode(id) {
   if (!id || id === root.id) return;
 
@@ -530,14 +678,59 @@ function outdentNode(id) {
   render();
 }
 
+function htmlPlainText(html) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+  return (tmp.textContent || "").trim();
+}
+
+function replaceTextInsideHtmlPreservingMarkup(html, nextText) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html || "";
+
+  const walker = document.createTreeWalker(tmp, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode);
+  }
+
+  if (!textNodes.length) return "";
+
+  textNodes[0].nodeValue = nextText;
+
+  for (let i = 1; i < textNodes.length; i++) {
+    const n = textNodes[i];
+    if (n.parentNode) n.parentNode.removeChild(n);
+  }
+
+  return tmp.innerHTML;
+}
+
 function shiftSubtreeLevel(node, delta) {
   const oldLevel = node.level;
   const newLevel = oldLevel + delta;
 
   if (newLevel < LEVEL.COMPANY || newLevel > LEVEL.STEP) return false;
 
-  if ((node.name || '').trim() === DEFAULT_NAME[oldLevel]) {
-    node.name = DEFAULT_NAME[newLevel];
+  const oldDefault = DEFAULT_NAME[oldLevel];
+  const newDefault = DEFAULT_NAME[newLevel];
+
+  const plainName = String(node.name || "").trim();
+  const htmlText = node.nameHtml ? htmlPlainText(node.nameHtml) : "";
+
+  const shouldRenameDefault =
+    plainName === oldDefault || htmlText === oldDefault;
+
+  if (shouldRenameDefault) {
+    node.name = newDefault;
+
+    if (node.nameHtml) {
+      node.nameHtml = replaceTextInsideHtmlPreservingMarkup(
+        node.nameHtml,
+        newDefault
+      );
+    }
   }
 
   node.level = newLevel;
@@ -546,6 +739,7 @@ function shiftSubtreeLevel(node, delta) {
     const ok = shiftSubtreeLevel(ch, delta);
     if (!ok) return false;
   }
+
   return true;
 }
 
@@ -934,14 +1128,14 @@ row.appendChild(label);
     if (isHotkey(e, "moveUp")) {
       e.preventDefault();
       selectedId = n.id;
-      moveWithinParent(-1);
+      moveByVisibleOrder(-1);
       return;
     }
-
+    
     if (isHotkey(e, "moveDown")) {
       e.preventDefault();
       selectedId = n.id;
-      moveWithinParent(+1);
+      moveByVisibleOrder(+1);
       return;
     }
 
@@ -1203,13 +1397,13 @@ window.addEventListener('keydown', (e) => {
 
   if (isHotkey(e, "moveUp")) {
     e.preventDefault();
-    moveWithinParent(-1);
+    moveByVisibleOrder(-1);
     return;
   }
-
+  
   if (isHotkey(e, "moveDown")) {
     e.preventDefault();
-    moveWithinParent(+1);
+    moveByVisibleOrder(+1);
     return;
   }
 

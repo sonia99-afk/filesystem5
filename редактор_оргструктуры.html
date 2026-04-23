@@ -157,7 +157,6 @@
       <aside class="sidebar">
         <button class="toggle-right"><img src="icons/icon2.png" class="iconsize" /></button>
         <div class="panel-title">Список функций и горячие клавиши</div>
-      
         <table class="hotkeys">
           <thead>
             <tr>
@@ -209,17 +208,17 @@
               <td data-action="navDown">ArrowDown</td>
             </tr>
             <tr>
-              <td data-action="navLeft">ArrowLeft</td>
+              <!-- <td data-action="navLeft">ArrowLeft</td> -->
             </tr>
             <tr>
-              <td data-action="navRight">ArrowRight</td>
+              <!-- <td data-action="navRight">ArrowRight</td> -->
             </tr>
         
             <!-- Перемещение внутри уровня -->
             <tr>
               <td>Переместить вверх</td>
               <td data-action="moveUp">Shift+ArrowUp</td>
-              <td rowspan="4" style="background-color: #f3f3f3;">Перетаскивание мышкой</td>
+              <td rowspan="2" style="background-color: #f3f3f3;">Перетаскивание мышкой</td>
               <td>-</td>
             </tr>
             <tr>
@@ -227,16 +226,45 @@
               <td data-action="moveDown">Shift+ArrowDown</td>
               <td>-</td>
             </tr>
-            
+
             <tr>
-              <td>Вложить в верхний объект</td>
-              <td data-action="indent">Shift+ArrowRight</td>
-              <td>-</td>
+              <td rowspan="2">Навигация по уровню</td>
+              <td data-action="levelNavUp"></td>
+              <td rowspan="2">-</td>
+              <td rowspan="2">Переход к предыдущему/следующему объекту того же уровня</td>
             </tr>
             <tr>
-              <td>Вынести на верхний уровень</td>
-              <td data-action="outdent">Shift+ArrowLeft</td>
-              <td>-</td>
+              <td data-action="levelNavDown"></td>
+            </tr>
+
+            <tr>
+              <td rowspan="2">Навигация по ветке</td>
+              <td data-action="branchNavLeft"></td>
+              <td rowspan="2">-</td>
+              <td rowspan="2">Переход к родителю / первому ребёнку в текущей ветке</td>
+            </tr>
+            <tr>
+              <td data-action="branchNavRight"></td>
+            </tr>
+
+            <tr>
+              <td rowspan="2">Перемещение по уровню</td>
+              <td data-action="levelMoveUp"></td>
+              <td rowspan="2">-</td>
+              <td rowspan="2">Перемещение к предыдущему/следующему объекту того же уровня</td>
+            </tr>
+            <tr>
+              <td data-action="levelMoveDown"></td>
+            </tr>
+
+            <tr>
+              <td rowspan="2">Перемещение по ветке</td>
+              <td data-action="branchMoveLeft"></td>
+              <td rowspan="2">-</td>
+              <td rowspan="2">Перемещение к родителю / вложение в первого ребёнка текущей ветки</td>
+            </tr>
+            <tr>
+              <td data-action="branchMoveRight"></td>
             </tr>
         
             <!-- Диапазон (один уровень) -->
@@ -244,17 +272,27 @@
               <td rowspan="2">Диапазон (только один уровень)</td>
               <td data-action="rangeUp">Shift+Alt+Ctrl/Cmd+ArrowUp</td>
               <td rowspan="2" data-action="rangeClick">Primary+Alt+Shift+Click</td>
-              <td rowspan="2">-</td>
+              <td rowspan="2"></td>
             </tr>
             <tr>
               <td data-action="rangeDown">Shift+Alt+Ctrl/Cmd+ArrowDown</td>
+            </tr>
+
+            <tr>
+              <td rowspan="2">Выделение по ветке</td>
+              <td data-action="branchRangeLeft"></td>
+              <td rowspan="2">-</td>
+              <td rowspan="2">Расширение выделения к родителю / первому ребёнку по одной branch-цепочке</td>
+            </tr>
+            <tr>
+              <td data-action="branchRangeRight"></td>
             </tr>
         
             <!-- Глубокое выделение (ветка) -->
             <tr>
               <td rowspan="2">Глубокое выделение (в ветке)</td>
-              <td data-action="deepUp">Shift+Ctrl/Cmd+ArrowUp</td>
-              <td rowspan="2" data-action="deepClick">Primary+Shift+Click</td>
+              <td data-action="deepUp">Ctrl/Cmd+ArrowUp</td>
+              <td rowspan="2" data-action="deepClick">Primary+Click</td>
               <td rowspan="2">-</td>
             </tr>
             <tr>
@@ -300,6 +338,13 @@
             <tr>
               <td>Дублировать</td>
               <td data-action="duplicate">Ctrl/Cmd+D</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+
+            <tr>
+              <td>Выделить всё</td>
+              <td data-action="selectAll"></td>
               <td>-</td>
               <td>-</td>
             </tr>
@@ -429,8 +474,6 @@
   <script src="arrow_hold_nav.js"></script>
   <script src="multi_select_patch.js"></script>
   <script src="multi_select_deep.js"></script>
-  <script src="multi_ops.js"></script>
-  <script src="multi_move.js"></script>
   <script src="multi_move_hierarchy.js"></script>
   <script src="tg_export_mode.js"></script>
   <script src="text_formatting.js"></script>
@@ -440,6 +483,11 @@
   <script src="drag_move.js"></script>
   <script src="clipboard_ops.js"></script>
 
+  <script src="level_nav.js"></script>
+  <script src="branch_nav.js"></script>
+  <script src="level_move.js"></script>
   <script src="panel_toggle.js"></script>
+  <script src="branch_move.js"></script>
+  <script src="multi_select_branch.js"></script>
 </body>
 </html>

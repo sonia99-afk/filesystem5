@@ -123,6 +123,28 @@
     state.blockKey = null;
   }
 
+  function selectAllRows() {
+    const h = host();
+    if (!h) return;
+  
+    const rows = Array.from(h.querySelectorAll(".row[data-id]"));
+    if (!rows.length) return;
+  
+    state.ids = new Set(rows.map((r) => r.dataset.id));
+    state.anchorId = rows[0].dataset.id;
+    state.blockKey = "ROOT";
+  
+    // оставляем текущий selectedId, если он уже есть,
+    // иначе ставим на первый элемент
+    if (!selectedId || !state.ids.has(selectedId)) {
+      selectedId = rows[0].dataset.id;
+    }
+  
+    treeHasFocus = true;
+    applyClasses();
+    render();
+  }
+
   function applyClasses() {
     const h = host();
     if (!h) return;
@@ -216,6 +238,16 @@
       if (window.hotkeysMode === "custom") return;
       if (isEditingNow()) return;
       if (typeof isHotkey !== "function") return;
+
+      if (isHotkey(e, "selectAll")) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      
+        try { window.multiSelect?.clear?.(); } catch (_) {}
+        selectAllRows();
+        return;
+      }
 
       if (isHotkey(e, "deepUp")) {
         e.preventDefault();
@@ -359,7 +391,8 @@
         ids: Array.from(state.ids),
       };
     },
-    handleDeepRangeKey
+    handleDeepRangeKey,
+    selectAll: selectAllRows
   };
 
   // Сброс deep-выделения при обычной навигации стрелками

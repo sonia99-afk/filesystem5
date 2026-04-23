@@ -59,42 +59,76 @@
     return h.querySelector(".row.sel");
   }
 
+  // function contextKeyForRow(row) {
+  //   if (!row) return null;
+
+  //   const li = row.closest("li");
+  //   if (!li) return null;
+
+  //   const ul = li.parentElement;
+  //   if (!ul || ul.tagName !== "UL") return null;
+
+  //   const level = ul.dataset?.level ? String(ul.dataset.level) : "";
+
+  //   const parentLi = ul.closest("li");
+  //   const parentRow = parentLi ? parentLi.querySelector(":scope > .row") : null;
+  //   const parentId = parentRow ? parentRow.dataset.id : "ROOT";
+
+  //   return `${parentId}::${level}`;
+  // }
+
+  // function siblingRows(row) {
+  //   if (!row) return [];
+
+  //   const li = row.closest("li");
+  //   if (!li) return [];
+
+  //   const ul = li.parentElement;
+  //   if (!ul || ul.tagName !== "UL") return [];
+
+  //   const lis = Array.from(ul.children).filter((x) => x.tagName === "LI");
+  //   const out = [];
+
+  //   for (const li2 of lis) {
+  //     const r = li2.querySelector(":scope > .row");
+  //     if (r) out.push(r);
+  //   }
+
+  //   return out;
+  // }
+
   function contextKeyForRow(row) {
     if (!row) return null;
-
-    const li = row.closest("li");
-    if (!li) return null;
-
-    const ul = li.parentElement;
-    if (!ul || ul.tagName !== "UL") return null;
-
-    const level = ul.dataset?.level ? String(ul.dataset.level) : "";
-
-    const parentLi = ul.closest("li");
-    const parentRow = parentLi ? parentLi.querySelector(":scope > .row") : null;
-    const parentId = parentRow ? parentRow.dataset.id : "ROOT";
-
-    return `${parentId}::${level}`;
+  
+    const id = row.dataset?.id;
+    if (!id) return null;
+  
+    const found = findWithParent(root, id);
+    if (!found || !found.node) return null;
+  
+    return String(found.node.level);
   }
 
   function siblingRows(row) {
     if (!row) return [];
-
-    const li = row.closest("li");
-    if (!li) return [];
-
-    const ul = li.parentElement;
-    if (!ul || ul.tagName !== "UL") return [];
-
-    const lis = Array.from(ul.children).filter((x) => x.tagName === "LI");
-    const out = [];
-
-    for (const li2 of lis) {
-      const r = li2.querySelector(":scope > .row");
-      if (r) out.push(r);
-    }
-
-    return out;
+  
+    const id = row.dataset?.id;
+    if (!id) return [];
+  
+    const found = findWithParent(root, id);
+    if (!found || !found.node) return [];
+  
+    const targetLevel = found.node.level;
+    const h = host();
+    if (!h) return [];
+  
+    return Array.from(h.querySelectorAll(".row[data-id]")).filter((r) => {
+      const rid = r.dataset?.id;
+      if (!rid) return false;
+  
+      const info = findWithParent(root, rid);
+      return !!info && !!info.node && info.node.level === targetLevel;
+    });
   }
 
   function reset() {

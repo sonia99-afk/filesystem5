@@ -27,26 +27,38 @@
     // Навигация
     navUp: "ArrowUp",
     navDown: "ArrowDown",
-    navLeft: "ArrowLeft",
-    navRight: "ArrowRight",
+    navLeft: "",
+navRight: "",
     navClick: "Click",
 
     // Перемещение внутри уровня
     moveUp: "Shift+ArrowUp",
     moveDown: "Shift+ArrowDown",
 
+    levelNavUp: "Alt+ArrowUp",
+    levelNavDown: "Alt+ArrowDown",
+    branchNavLeft: "Alt+ArrowLeft",
+    branchNavRight: "Alt+ArrowRight",
+    levelMoveUp: "Shift+Alt+ArrowUp",
+    levelMoveDown: "Shift+Alt+ArrowDown",
+    branchMoveLeft: "Shift+Alt+ArrowLeft",
+    branchMoveRight: "Shift+Alt+ArrowRight",
+
     // Перемещение между уровнями
-    indent: "Shift+ArrowRight",
-    outdent: "Shift+ArrowLeft",
+    indent: "",
+outdent: "",
 
     // Диапазон (один уровень)
     rangeUp: "Primary+Alt+Shift+ArrowUp",
     rangeDown: "Primary+Alt+Shift+ArrowDown",
     rangeClick: "Primary+Alt+Shift+Click",
 
+    branchRangeLeft: "Primary+Alt+Shift+ArrowLeft",
+branchRangeRight: "Primary+Alt+Shift+ArrowRight",
+
     // Глубокое выделение (ветка)
-    deepUp: "Primary+Shift+ArrowUp",
-    deepDown: "Primary+Shift+ArrowDown",
+    deepUp: "Primary+ArrowUp",
+    deepDown: "Primary+ArrowDown",
     deepClick: "Primary+Shift+Click",
 
     // Прочее
@@ -64,6 +76,7 @@
     cut: "Primary+X",
     paste: "Primary+V",
     duplicate: "Primary+D",
+    selectAll: "Primary+A",
 
     // Undo/Redo
     undo: "Primary+Z",
