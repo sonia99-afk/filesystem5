@@ -1,3 +1,21 @@
+const VIEW = {
+  SCHEMA: "schema",
+  HIERARCHY: "hierarchy",
+  AICYCLE: "aicycle",
+  TABLE: "table",
+  LIST: "list",
+  TEXT: "text",
+};
+
+let currentView = VIEW.SCHEMA;
+
+const VIEW_ORIENTATION = {
+  HORIZONTAL: "horizontal",
+  VERTICAL: "vertical",
+};
+
+let viewOrientation = VIEW_ORIENTATION.VERTICAL;
+
 const LEVEL = { COMPANY: 0, PROJECT: 1, DEPT: 2, ROLE: 3, STEP: 20 };
 
 let showOrdinals = true;
@@ -28,6 +46,54 @@ const DEFAULT_NAME = {
 };
 
 const uid = () => Math.random().toString(36).slice(2, 9) + '_' + Date.now().toString(36);
+
+function syncViewButtons() {
+  document.getElementById("modeStd")?.classList.toggle("is-active", currentView === VIEW.SCHEMA);
+  document.getElementById("modeHierarchy")?.classList.toggle("is-active", currentView === VIEW.HIERARCHY);
+  document.getElementById("modeAicycle")?.classList.toggle("is-active", currentView === VIEW.AICYCLE);
+  document.getElementById("modeTable")?.classList.toggle("is-active", currentView === VIEW.TABLE);
+  document.getElementById("modeList")?.classList.toggle("is-active", currentView === VIEW.LIST);
+  document.getElementById("modeText")?.classList.toggle("is-active", currentView === VIEW.TEXT);
+}
+
+function setCurrentView(view) {
+  currentView = view || VIEW.SCHEMA;
+
+  if (currentView === VIEW.AICYCLE) {
+    viewOrientation = VIEW_ORIENTATION.HORIZONTAL;
+  }
+
+  document.body.classList.toggle("view-hierarchy", currentView === VIEW.HIERARCHY);
+  document.body.classList.toggle("view-schema", currentView === VIEW.SCHEMA);
+
+  if (currentView === VIEW.TEXT) {
+    setTelegramMode(true);
+    syncViewButtons();
+    return;
+  }
+
+  setTelegramMode(false);
+  render();
+  syncViewButtons();
+}
+
+function syncViewOrientationButtons() {
+  document.getElementById("hierarchyHorizontalBtn")?.classList.toggle(
+    "is-active",
+    viewOrientation === VIEW_ORIENTATION.HORIZONTAL
+  );
+
+  document.getElementById("hierarchyVerticalBtn")?.classList.toggle(
+    "is-active",
+    viewOrientation === VIEW_ORIENTATION.VERTICAL
+  );
+}
+
+function setViewOrientation(orientation) {
+  viewOrientation = orientation || VIEW_ORIENTATION.VERTICAL;
+  render();
+  syncViewOrientationButtons();
+}
 
 function makeNode(level, name) {
   return {
@@ -824,7 +890,7 @@ function initProjectsSidebar() {
   });
 }
 
-function render() {
+function renderSchemaView() {
   syncProjectsSidebar();
   const host = document.getElementById('tree');
   host.innerHTML = '';
@@ -841,6 +907,57 @@ function render() {
 
   const rid = consumeRenameRequest?.();
   if (rid) startRename(rid);
+}
+
+// function render() {
+//   if (currentView === VIEW.HIERARCHY) {
+//     if (hierarchyOrientation === HIERARCHY_ORIENTATION.HORIZONTAL) {
+//       window.renderHierarchyHorizontalView?.();
+//     } else {
+//       window.renderHierarchyView?.();
+//     }
+  
+//     syncHierarchyOrientationButtons();
+//     return;
+//   }
+
+//   renderSchemaView();
+// }
+
+function render() {
+  if (currentView === VIEW.HIERARCHY) {
+    if (viewOrientation === VIEW_ORIENTATION.HORIZONTAL) {
+      window.renderHierarchyHorizontalView?.();
+    } else {
+      window.renderHierarchyView?.();
+    }
+
+    syncViewOrientationButtons();
+    return;
+  }
+
+  if (currentView === VIEW.AICYCLE) {
+    if (viewOrientation === VIEW_ORIENTATION.VERTICAL) {
+      window.renderIcicleVerticalView?.();
+    } else {
+      window.renderIcicleHorizontalView?.();
+    }
+  
+    syncViewOrientationButtons();
+    return;
+  }
+
+  if (currentView === VIEW.TABLE) {
+    window.renderTableView?.();
+    return;
+  }
+
+  if (currentView === VIEW.LIST) {
+    window.renderListView?.();
+    return;
+  }
+
+  renderSchemaView();
 }
 
 function isTreeLocked() {
@@ -979,6 +1096,41 @@ function applyCaptionOrdinalOffsets() {
     const shift = badgeBox.width + mr;
     caps.style.marginLeft = `${Math.ceil(shift)}px`;
   });
+}
+
+function renderCaptions(node, li) {
+  if (!showCaptions || !Array.isArray(node.captions) || !node.captions.length) {
+    return;
+  }
+
+  const caps = document.createElement("div");
+  caps.className = "captions";
+
+  for (const c of node.captions) {
+    const cap = document.createElement("div");
+
+    const isMultiline =
+      (c.text || "").includes("\n") ||
+      (c.textHtml || "").includes("<br>");
+
+    cap.className = "caption" + (isMultiline ? " caption-multiline" : "");
+    cap.dataset.nodeId = node.id;
+    cap.dataset.captionId = c.id;
+
+    if (c.textHtml) cap.innerHTML = c.textHtml;
+    else cap.textContent = c.text || "";
+
+    cap.addEventListener("dblclick", (e) => {
+      e.stopPropagation();
+      selectedId = node.id;
+      treeHasFocus = true;
+      startCaptionEdit(node.id, c.id);
+    });
+
+    caps.appendChild(cap);
+  }
+
+  li.appendChild(caps);
 }
 
 function renderNode(n, ordinalPath = []) {
@@ -1178,36 +1330,7 @@ row.appendChild(label);
 
   li.appendChild(row);
 
-  if (showCaptions && Array.isArray(n.captions) && n.captions.length) {
-    const caps = document.createElement("div");
-    caps.className = "captions";
-  
-    for (const c of n.captions) {
-      const cap = document.createElement("div");
-
-const isMultiline =
-  (c.text || "").includes("\n") ||
-  (c.textHtml || "").includes("<br>");
-
-cap.className = "caption" + (isMultiline ? " caption-multiline" : "");
-      cap.dataset.nodeId = n.id;
-      cap.dataset.captionId = c.id;
-  
-      if (c.textHtml) cap.innerHTML = c.textHtml;
-      else cap.textContent = c.text || "";
-  
-      cap.addEventListener("dblclick", (e) => {
-        e.stopPropagation();
-        selectedId = n.id;
-        treeHasFocus = true;
-        startCaptionEdit(n.id, c.id);
-      });
-  
-      caps.appendChild(cap);
-    }
-  
-    li.appendChild(caps);
-  }
+  renderCaptions(n, li);
 
   if (n.children && n.children.length) {
     const ul = document.createElement('ul');
@@ -1417,6 +1540,12 @@ window.addEventListener('keydown', (e) => {
   if (isHotkey(e, "delete")) {
     e.preventDefault();
     removeSelected();
+    return;
+  }
+
+  if (isHotkey(e, "addCaption")) {
+    e.preventDefault();
+    addCaption(selectedId);
     return;
   }
 

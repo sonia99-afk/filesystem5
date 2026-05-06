@@ -313,7 +313,10 @@ function startCaptionEdit(nodeId, captionId, opts = {}) {
   const el = document.querySelector(
     `.caption[data-node-id="${cssEscape(nodeId)}"][data-caption-id="${cssEscape(captionId)}"]`
   );
-  if (!el) return;
+  if (!el) {
+    renamingId = null;
+    return;
+  }
 
   const curText = capData.text || "";
   const curHtml = capData.textHtml || "";

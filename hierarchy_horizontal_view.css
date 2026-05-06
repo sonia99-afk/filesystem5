@@ -1,0 +1,124 @@
+.hierarchy-horizontal-view {
+  min-width: max-content;
+  /* font-family: Consolas, "Courier New", monospace; */
+}
+
+.hierarchy-horizontal-view li::before,
+.hierarchy-horizontal-view li::after {
+  content: none !important;
+  display: none !important;
+}
+
+.hh-item {
+  position: relative;
+  width: max-content;
+}
+
+.hh-main {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  height: 22px;
+}
+
+.hh-line-to-first {
+  flex: 0 0 32px;
+  border-top: 1px solid #000;
+  margin-top: 11px;
+}
+
+.hierarchy-horizontal-node {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+
+  width: max-content;
+  max-width: 260px;
+  height: 20px !important;;
+  line-height: 20px !important;
+
+  padding: 1px 2px;
+  box-sizing: border-box;
+
+  background: transparent;
+  white-space: nowrap;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.hierarchy-horizontal-node .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hierarchy-horizontal-node.sel {
+  background: #eaeaea;
+}
+
+/* остальные дети текущего узла */
+/* .hh-rest {
+  position: relative;
+  margin-left: 110px;
+  padding-left: 28px;
+  margin-top: 12px;
+} */
+
+/* вертикальная шина для остальных детей */
+.hh-rest::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -11px;
+  height: var(--hh-line-height, 0px);
+  border-left: 1px solid #000;
+}
+
+/* каждая ветка-rest */
+.hh-rest-branch {
+  position: relative;
+  margin-bottom: 0px;
+}
+
+.hh-rest-branch:last-child {
+  margin-bottom: 0;
+}
+
+/* горизонтальная палочка к rest-ребёнку */
+.hh-rest-branch::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 12px;
+  width: 16px;
+  border-top: 1px solid #000;
+}
+
+.hh-item > .captions {
+  margin-top: 3px;
+  margin-left: 0;
+  font-size: 12px;
+  line-height: 1.05;
+  color: #000;
+  max-width: 260px;
+}
+
+.hh-item > .captions .caption {
+  white-space: pre-wrap;
+}
+
+.hh-rest {
+  position: relative;
+  margin-left: calc(15px + var(--hh-parent-num-shift, 0px));
+  padding-left: 16px;
+  margin-top: 0px;
+}
+
+.hierarchy-node .label,
+.hierarchy-horizontal-node .label {
+  display: inline-block;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -294,11 +294,24 @@ td.conflict{
 }
 
 
-/* скругления: у левой убираем справа, у правой убираем слева */
-#modeStd{
+.view-switcher {
+  display: inline-flex;
+}
+
+.view-switcher .btnn {
+  margin: 0;
+  border-radius: 0;
+}
+
+.view-switcher .btnn:not(:first-child) {
+  margin-left: -1px;
+}
+
+.view-switcher .btnn:first-child {
   border-radius: 2px 0 0 2px;
 }
-#modeText{
+
+.view-switcher .btnn:last-child {
   border-radius: 0 2px 2px 0;
 }
 
@@ -1070,7 +1083,7 @@ body.hotkeys-edit-mode #tree li::before{
 .color-tools{
   display:inline-flex;
   align-items:center;
-  gap:14px;
+  gap:11px;
   margin-left:21px;
 }
 
@@ -1273,4 +1286,38 @@ button *,
 .rt-color {
   color: var(--rt-color);
   text-decoration-color: currentColor;
+}
+
+
+
+.view-switcher {
+  display: inline-flex;
+}
+
+#modeStd {
+  border-radius: 2px 0 0 2px;
+}
+
+#modeHierarchy {
+  border-radius: 0;
+  margin-left: -1px;
+}
+
+#modeText {
+  border-radius: 0 2px 2px 0;
+  margin-left: -1px;
+}
+
+.hierarchy-orientation-switcher {
+  display: inline-flex;
+  margin-left: 21px;
+}
+
+.hierarchy-orientation-switcher .btnn:first-child {
+  border-radius: 2px 0 0 2px;
+}
+
+.hierarchy-orientation-switcher .btnn:last-child {
+  border-radius: 0 2px 2px 0;
+  margin-left: -1px;
 }

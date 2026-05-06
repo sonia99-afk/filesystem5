@@ -1,0 +1,94 @@
+.table-view {
+    min-width: max-content;
+  }
+  
+  .structure-table {
+    border-collapse: collapse;
+    background: #fff;
+  }
+  
+  .structure-table th,
+  .structure-table td {
+    border: 1px solid #cfcfcf;
+    padding: 0px 0px;
+    text-align: left;
+    vertical-align: top;
+    min-width: 90px;
+  }
+  
+  .structure-table th {
+    font-weight: 700;
+    background: #f7f7f7;
+  }
+  
+  .structure-table td:nth-child(1) {
+    width: 120px;
+  }
+  
+  .structure-table td:nth-child(2) {
+    width: 120px;
+  }
+  
+  .structure-table td:nth-child(3) {
+    width: 120px;
+  }
+  
+  .structure-table td:nth-child(4) {
+    min-width: 120px;
+    
+  }
+  
+  .structure-table td:nth-child(5) {
+    min-width: 120px;
+    max-width: 120px;
+  }
+  
+  .table-name-row {
+    display: inline-flex;
+    align-items: center;
+    max-width: 270px;
+  }
+  
+  .table-name-row.sel {
+    background: #eaeaea;
+  }
+  
+  .table-notes-cell .captions {
+    margin: 0;
+  }
+  
+  .table-notes-cell .caption {
+    margin: 0;
+    white-space: pre-wrap;
+  }
+
+  /* .structure-table td.table-notes-cell {
+    max-width: 220px;
+    width: 220px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  
+  .structure-table td.table-notes-cell .captions,
+  .structure-table td.table-notes-cell .caption {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  } */
+
+  .structure-table td.table-notes-cell {
+    max-width: 220px;
+    width: 220px;
+    overflow: hidden;
+  }
+  
+  .structure-table td.table-notes-cell .caption {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }

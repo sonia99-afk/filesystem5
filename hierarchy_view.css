@@ -1,0 +1,105 @@
+
+.hierarchy-view {
+    min-width: max-content;
+    /* padding: 40px; */
+  }
+  
+  .hierarchy-tree,
+  .hierarchy-children {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .hierarchy-tree {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .hierarchy-children > .hierarchy-li {
+    position: relative;
+    text-align: center;
+    padding: 16px 0px 0;
+  }
+
+  .hierarchy-li {
+    position: relative;
+    text-align: center;
+  }
+  
+  .hierarchy-children {
+    display: flex;
+    justify-content: center;
+    padding-top: 14px;
+    position: relative;
+  }
+  
+  .hierarchy-children::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    height: 14px;
+    width: 1px;
+    background: #000;
+  }
+  
+  .hierarchy-children > .hierarchy-li::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 15px;
+    background: #000;
+  }
+  
+  .hierarchy-children > .hierarchy-li::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #000;
+  }
+  
+  .hierarchy-children > .hierarchy-li:first-child::after {
+    left: 50%;
+  }
+  
+  .hierarchy-children > .hierarchy-li:last-child::after {
+    right: 50%;
+  }
+  
+  .hierarchy-children > .hierarchy-li:only-child::after {
+    display: none;
+  }
+  
+  .hierarchy-node {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    line-height: 20px;
+    padding: 1px 2px;
+    background: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  
+  .hierarchy-node.sel {
+    background: #eaeaea;
+  }
+
+  .hierarchy-tree > .hierarchy-li::before {
+    display: none;
+  }
+
+  .hierarchy-node .label,
+.hierarchy-horizontal-node .label {
+  display: inline-block;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

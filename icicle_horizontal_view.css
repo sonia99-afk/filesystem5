@@ -1,0 +1,155 @@
+.icicle-horizontal-view {
+    min-width: max-content;
+  }
+  
+  .icicle-horizontal-canvas {
+    position: relative;
+  }
+  
+  .icicle-horizontal-node {
+    position: absolute;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  
+    box-sizing: border-box;
+    padding: 1 2px;
+  
+    overflow: hidden;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  
+  .icicle-horizontal-node .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* .icicle-horizontal-node.sel {
+    outline: 2px solid #000;
+    outline-offset: -2px;
+  } */
+  
+  .icicle-horizontal-node[data-id] .ordinal-badge {
+    margin-right: 4px;
+  }
+
+  .icicle-horizontal-node {
+    flex-direction: column;
+  }
+  
+  .icicle-horizontal-node .captions {
+    font-size: 11px;
+    line-height: 1.1;
+    margin-top: 2px;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  .icicle-horizontal-node .caption {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .icicle-horizontal-node {
+    flex-direction: column;
+  }
+  
+  .icicle-horizontal-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+    min-width: 0;
+  }
+  
+  .icicle-horizontal-main .ordinal-badge {
+    margin-right: 4px;
+    flex: 0 0 auto;
+  }
+  
+  .icicle-horizontal-main .label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .icicle-horizontal-node .edit {
+    max-width: 120px;       /* ограничение */
+    width: 100%;            /* не шире контейнера */
+    box-sizing: border-box; /* чтобы padding не раздувал */
+  }
+  
+  .icicle-horizontal-node .captions .edit {
+    width: 100%;
+    max-width: 120px;
+  }
+
+  .icicle-horizontal-node .captions input,
+  .icicle-horizontal-node .captions textarea,
+  .icicle-horizontal-node .captions .edit {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .icicle-horizontal-node .captions {
+    width: 132px;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  /* однострочные */
+.icicle-horizontal-node .caption:not(.caption-multiline) {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* многострочные */
+.icicle-horizontal-node .caption-multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.icicle-horizontal-node {
+  border: 1px solid #000;
+}
+
+/* .icicle-horizontal-main .edit,
+.icicle-vertical-main .edit,
+.icicle-horizontal-node > .edit,
+.icicle-vertical-node > .edit {
+  display: block !important;
+  max-width: 132px !important;
+  min-width: 0 !important;
+  width: auto !important;
+
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+
+  box-sizing: border-box !important;
+}но важное изменение */
+
+.icicle-horizontal-node .label {
+  display: block;
+  max-width: 132px;
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,166 @@
+.leaf-page {
+  min-height: 760px;
+  padding: 38px 40px 44px;
+  box-sizing: border-box;
+  font-family: "SF Pro Text", "Arial", sans-serif;
+}
+
+.leaf-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 10px 0;
+}
+
+.leaf-flow {
+  text-align: justify;
+  text-justify: inter-word;
+  font-size: 18px;
+  line-height: 1.54;
+  letter-spacing: -0.01em;
+  word-spacing: 0.01em;
+  max-width: 270px;
+}
+
+.leaf-item {
+  display: block;
+  margin: 0;
+}
+
+.leaf-item + .leaf-item {
+  margin-top: 0.12em;
+}
+
+.leaf-node {
+  display: inline-flex !important;
+  align-items: baseline;
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.leaf-node.sel {
+  background: #eaeaea;
+}
+
+.leaf-index {
+  color: #2f5cff;
+  font-weight: 560;
+  margin-right: 0.35em;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.leaf-label {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.leaf-notes {
+  display: block;
+  margin-top: -0.12em;
+  color: #7a7a80;
+  font-size: 0.84em;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.22;
+}
+
+.leaf-notes .captions {
+  margin: 0;
+}
+
+.leaf-notes .caption {
+  display: block;
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.leaf-notes .edit,
+.leaf-notes input,
+.leaf-notes textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.lvl-0 {
+  font-size: 1.12em;
+  font-weight: 600;
+  color: #1d1d1f;
+  letter-spacing: -0.02em;
+  line-height: 1.66;
+}
+
+.lvl-1 {
+  font-size: 1.03em;
+  font-weight: 580;
+  color: #1d1d1f;
+  line-height: 1.62;
+}
+
+.lvl-2 {
+  font-size: 0.98em;
+  font-weight: 520;
+  color: #3a3a3c;
+  line-height: 1.58;
+}
+
+.lvl-3 {
+  font-size: 0.96em;
+  font-weight: 500;
+  color: #3a3a3c;
+  line-height: 1.55;
+}
+
+.lvl-4 {
+  font-size: 0.94em;
+  font-weight: 470;
+  color: #3a3a3c;
+  line-height: 1.52;
+}
+
+.lvl-5 {
+  font-size: 0.92em;
+  font-weight: 450;
+  color: #3a3a3c;
+  line-height: 1.48;
+}
+
+.lvl-6 {
+  font-size: 0.92em;
+  font-weight: 450;
+  color: #7a7a80;
+  line-height: 1.48;
+}
+
+.gap-s {
+  margin-top: 0.2em !important;
+}
+
+.gap-m {
+  margin-top: 0.42em !important;
+}
+
+.gap-l {
+  margin-top: 0.8em !important;
+}
+
+
+.leaf-notes {
+  display: block;
+  margin-top: -0.12em;
+  color: #7a7a80;
+  font-size: 0.84em !important;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.22;
+}
+
+.leaf-notes .captions,
+.leaf-notes .caption {
+  font-size: inherit !important;
+  line-height: inherit !important;
+}

@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Оргструктура — дерево (минимум)</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="hierarchy_view.css" />
+  <link rel="stylesheet" href="hierarchy_horizontal_view.css" />
+  <link rel="stylesheet" href="icicle_horizontal_view.css" />
+  <link rel="stylesheet" href="icicle_vertical_view.css" />
+  <link rel="stylesheet" href="table_view.css" />
+  <link rel="stylesheet" href="list_view.css" />
 </head>
 <body>
 
@@ -35,9 +41,17 @@
           <path d="M20 9h-9a7 7 0 1 0 0 14h1"/>
         </svg>
         </button>
-        <span>
-          <button id="modeStd" onclick="setTelegramMode(false)" class="btnn addmargin">Схема</button>
-          <button id="modeText" onclick="setTelegramMode(true)" class="btnn">Текст</button>
+        <span class="view-switcher">
+          <button id="modeStd" onclick="setCurrentView('schema')" class="btnn">Структура</button>
+          <button id="modeHierarchy" onclick="setCurrentView('hierarchy')" class="btnn">Иерархия</button>
+          <button id="modeAicycle" onclick="setCurrentView('aicycle')" class="btnn">Айсикл</button>
+          <button id="modeTable" onclick="setCurrentView('table')" class="btnn">Таблица</button>
+          <button id="modeList" onclick="setCurrentView('list')" class="btnn">Лист</button>
+          <button id="modeText" onclick="setCurrentView('text')" class="btnn">Текст</button>
+        </span>
+        <span class="hierarchy-orientation-switcher">
+          <button id="hierarchyHorizontalBtn" onclick="setViewOrientation('horizontal')" class="btnn">Горизонтальная</button>
+          <button id="hierarchyVerticalBtn" onclick="setViewOrientation('vertical')" class="btnn">Вертикальная</button>
         </span>
         <button id="tgCopy" class="btnn">Копировать</button>
           <div class="formatblock">
@@ -468,6 +482,12 @@
   <script src="hotkeys_config.js"></script>
   <script src="rename.js"></script>
   <script src="app2.js"></script>
+  <script src="hierarchy_view.js"></script>
+  <script src="hierarchy_horizontal_view.js"></script>
+  <script src="icicle_horizontal_view.js"></script>
+  <script src="icicle_vertical_view.js"></script>
+  <script src="table_view.js"></script>
+  <script src="list_view.js"></script>
   <script src="hotkeys_editor.js"></script>
   
   <script src="hotkeys_ui.js"></script> 

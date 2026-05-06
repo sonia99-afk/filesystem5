@@ -1,0 +1,138 @@
+.icicle-vertical-view {
+  min-width: max-content;
+}
+
+.icicle-vertical-canvas {
+  position: relative;
+  min-width: max-content;
+  overflow: visible;
+}
+
+/* сброс старых линий дерева */
+.icicle-vertical-view li::before,
+.icicle-vertical-view li::after {
+  content: none !important;
+  display: none !important;
+}
+
+.icicle-vertical-node {
+  position: absolute;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  box-sizing: border-box;
+  padding: 1px 2px;
+
+  background: transparent;
+  border: 1px solid #000;
+
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* убираем старую активную обводку */
+.icicle-vertical-node.sel {
+  outline: none;
+  background: #eaeaea;
+}
+
+/* строка: номер + название */
+.icicle-vertical-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.icicle-vertical-main .ordinal-badge {
+  margin-right: 4px;
+  flex: 0 0 auto;
+}
+
+.icicle-vertical-main .label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* если main-контейнера в JS пока нет */
+.icicle-vertical-node > .ordinal-badge {
+  margin-right: 4px;
+}
+
+.icicle-vertical-node .label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* кнопки */
+.icicle-vertical-node .act {
+  margin-left: 8px;
+}
+
+/* подписи */
+.icicle-vertical-node .captions {
+  width: 132px;
+  max-width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+
+  font-size: 11px;
+  line-height: 1.1;
+  margin-top: 2px;
+
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.icicle-vertical-node .caption:not(.caption-multiline) {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icicle-vertical-node .caption-multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* инпуты подписей */
+.icicle-vertical-node .edit {
+  max-width: 120px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.icicle-vertical-node .captions input,
+.icicle-vertical-node .captions textarea,
+.icicle-vertical-node .captions .edit {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+
+.icicle-vertical-node .label {
+  display: block;
+  max-width: 132px;
+  min-width: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
